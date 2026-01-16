@@ -1,4 +1,4 @@
-import { Home, Thermometer, Wrench, Shield, MapPin, ShoppingCart, Trees, School, Heart, Train, Building, Dumbbell, Phone, Mail, Check, X } from 'lucide-react';
+import { Home, Thermometer, Wrench, Shield, ShoppingCart, Trees, School, Heart, Train, Building, Dumbbell, Phone, Mail, Check, X } from 'lucide-react';
 
 const NEARBY_PLACES = [
     { icon: ShoppingCart, name: 'Biedronka', distance: '500m' },

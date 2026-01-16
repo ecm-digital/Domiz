@@ -8,6 +8,7 @@ import { Services } from './pages/Services';
 import { OsiedleTluszcz } from './pages/OsiedleTluszcz';
 import { SmartHome } from './pages/SmartHome';
 import { AddProperty } from './pages/AddProperty';
+import { Properties } from './pages/Properties';
 import './App.css';
 
 function App() {
@@ -21,9 +22,10 @@ function App() {
             <Route path="/kalkulatory" element={<Calculators />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/uslugi" element={<Services />} />
-            <Route path="/osiedle-tłuszcz" element={<OsiedleTluszcz />} />
+            <Route path="/osiedle-tluszcz" element={<OsiedleTluszcz />} />
             <Route path="/smart-home" element={<SmartHome />} />
             <Route path="/dodaj-nieruchomosc" element={<AddProperty />} />
+            <Route path="/oferty" element={<Properties />} />
 
           </Routes>
         </main>

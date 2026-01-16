@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calculator, Home, CreditCard, Info, Check, AlertCircle } from 'lucide-react';
+import { Calculator, Home, CreditCard, Info, AlertCircle } from 'lucide-react';
 
 // Building cost rates per m2
 const COST_RATES = {

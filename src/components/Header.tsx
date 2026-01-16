@@ -1,6 +1,16 @@
 import { Link } from 'react-router-dom';
 import './Header.css';
 
+const NAV_ITEMS = [
+    { name: 'Strona główna', path: '/' },
+    { name: 'Oferty', path: '/oferty' },
+    { name: 'Kalkulatory', path: '/kalkulatory' },
+    { name: 'Blog', path: '/blog' },
+    { name: 'Usługi', path: '/uslugi' },
+    { name: 'Osiedle Tłuszcz', path: '/osiedle-tluszcz' },
+    { name: 'Smart Home', path: '/smart-home' },
+];
+
 export function Header() {
     return (
         <header className="site-header">
@@ -10,13 +20,13 @@ export function Header() {
                 </Link>
 
                 <nav className="main-nav">
-                    {['Strona główna', 'Kalkulatory', 'Blog', 'Usługi', 'Osiedle Tłuszcz', 'Smart Home'].map((item) => (
+                    {NAV_ITEMS.map((item) => (
                         <Link
-                            key={item}
-                            to={item === 'Strona główna' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
+                            key={item.name}
+                            to={item.path}
                             className="nav-item"
                         >
-                            {item}
+                            {item.name}
                         </Link>
                     ))}
                 </nav>

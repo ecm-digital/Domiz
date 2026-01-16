@@ -1,4 +1,4 @@
-import { Search, ArrowRight, Home } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 
 export function Hero() {
     return (
