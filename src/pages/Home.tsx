@@ -2,47 +2,16 @@ import { useNavigate } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { PropertyCard } from '../components/PropertyCard';
 import { ArrowRight, Star, Shield, Clock } from 'lucide-react';
-
-const FEATURED_PROPERTIES = [
-    {
-        id: 1,
-        title: "Nowoczesna Willa z Basenem",
-        price: "1 250 000 PLN",
-        location: "Tłuszcz, Aleja Lipowa",
-        beds: 4,
-        baths: 3,
-        sqft: 220,
-        image: "https://images.unsplash.com/photo-1600596542815-2250657d2f96?q=80&w=2675&auto=format&fit=crop"
-    },
-    {
-        id: 2,
-        title: "Apartament w Centrum",
-        price: "450 000 PLN",
-        location: "Tłuszcz, ul. Warszawska",
-        beds: 2,
-        baths: 1,
-        sqft: 65,
-        image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2670&auto=format&fit=crop"
-    },
-    {
-        id: 3,
-        title: "Dom Rodzinny na Przedmieściach",
-        price: "890 000 PLN",
-        location: "Jasienica, ul. Centralna",
-        beds: 5,
-        baths: 2,
-        sqft: 180,
-        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2670&auto=format&fit=crop"
-    }
-];
+import { PROPERTIES } from '../data/properties';
 
 export function Home() {
     const navigate = useNavigate();
+    const featuredProperties = PROPERTIES.filter(p => p.featured).slice(0, 3);
 
     return (
         <div style={{ minHeight: '100vh' }}>
             <Hero />
-
+            {/* ... Features Section ... */}
             {/* Features Section */}
             <section className="section-padding" style={{ position: 'relative', overflow: 'hidden' }}>
                 <div style={{
@@ -89,7 +58,6 @@ export function Home() {
                 </div>
             </section>
 
-
             {/* Featured Properties Section */}
             <section className="section-padding" style={{ background: 'var(--color-bg-darker)' }}>
                 <div className="container">
@@ -113,7 +81,7 @@ export function Home() {
                     </div>
 
                     <div className="properties-grid">
-                        {FEATURED_PROPERTIES.map((prop) => (
+                        {featuredProperties.map((prop) => (
                             <PropertyCard key={prop.id} {...prop} />
                         ))}
                     </div>

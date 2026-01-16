@@ -9,6 +9,7 @@ import { OsiedleTluszcz } from './pages/OsiedleTluszcz';
 import { SmartHome } from './pages/SmartHome';
 import { AddProperty } from './pages/AddProperty';
 import { Properties } from './pages/Properties';
+import { PropertyDetails } from './pages/PropertyDetails';
 import './App.css';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
             <Route path="/smart-home" element={<SmartHome />} />
             <Route path="/dodaj-nieruchomosc" element={<AddProperty />} />
             <Route path="/oferty" element={<Properties />} />
+            <Route path="/oferty/:id" element={<PropertyDetails />} />
 
           </Routes>
         </main>

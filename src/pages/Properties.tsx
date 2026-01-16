@@ -1,126 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { PROPERTIES } from '../data/properties';
 import { MapPin, Bed, Bath, Square, ArrowRight, Search, SlidersHorizontal, Grid, List, Heart, X } from 'lucide-react';
 
-const PROPERTIES = [
-    {
-        id: 1,
-        title: "Nowoczesna Willa z Basenem",
-        price: 1250000,
-        location: "Tłuszcz, Aleja Lipowa",
-        beds: 4,
-        baths: 3,
-        sqft: 220,
-        type: "dom",
-        status: "sprzedaz",
-        image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2675&auto=format&fit=crop",
-        featured: true,
-        description: "Luksusowa willa z basenem, ogrodem i garażem na 2 samochody. Wysoki standard wykończenia."
-    },
-    {
-        id: 2,
-        title: "Apartament w Centrum",
-        price: 450000,
-        location: "Tłuszcz, ul. Warszawska",
-        beds: 2,
-        baths: 1,
-        sqft: 65,
-        type: "mieszkanie",
-        status: "sprzedaz",
-        image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2670&auto=format&fit=crop",
-        featured: false,
-        description: "Nowoczesny apartament w centrum miasta z balkonem i miejscem parkingowym."
-    },
-    {
-        id: 3,
-        title: "Dom Rodzinny na Przedmieściach",
-        price: 890000,
-        location: "Jasienica, ul. Centralna",
-        beds: 5,
-        baths: 2,
-        sqft: 180,
-        type: "dom",
-        status: "sprzedaz",
-        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2670&auto=format&fit=crop",
-        featured: true,
-        description: "Przestronny dom rodzinny z dużym ogrodem, idealny dla rodziny z dziećmi."
-    },
-    {
-        id: 4,
-        title: "Kawalerka do Wynajęcia",
-        price: 2200,
-        location: "Tłuszcz, ul. Kolejowa",
-        beds: 1,
-        baths: 1,
-        sqft: 32,
-        type: "mieszkanie",
-        status: "wynajem",
-        image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=2680&auto=format&fit=crop",
-        featured: false,
-        description: "Przytulna kawalerka blisko stacji PKP, idealna dla singla lub pary."
-    },
-    {
-        id: 5,
-        title: "Działka Budowlana 1000m²",
-        price: 180000,
-        location: "Postoliska, ul. Polna",
-        beds: 0,
-        baths: 0,
-        sqft: 1000,
-        type: "dzialka",
-        status: "sprzedaz",
-        image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2532&auto=format&fit=crop",
-        featured: false,
-        description: "Działka budowlana z mediami przy granicy, gotowa pod budowę domu jednorodzinnego."
-    },
-    {
-        id: 6,
-        title: "Bliźniak z Ogrodem",
-        price: 720000,
-        location: "Tłuszcz, ul. Ogrodowa",
-        beds: 4,
-        baths: 2,
-        sqft: 145,
-        type: "dom",
-        status: "sprzedaz",
-        image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2653&auto=format&fit=crop",
-        featured: true,
-        description: "Nowoczesny bliźniak z ogrodem i tarasem, energia A+, pompa ciepła."
-    },
-    {
-        id: 7,
-        title: "Mieszkanie 3-pokojowe",
-        price: 3500,
-        location: "Tłuszcz, ul. Sportowa",
-        beds: 3,
-        baths: 1,
-        sqft: 72,
-        type: "mieszkanie",
-        status: "wynajem",
-        image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2670&auto=format&fit=crop",
-        featured: false,
-        description: "Przestronne mieszkanie 3-pokojowe z balkonem, umeblowane, gotowe do zamieszkania."
-    },
-    {
-        id: 8,
-        title: "Dom Ekologiczny",
-        price: 1150000,
-        location: "Mokra Wieś, ul. Słoneczna",
-        beds: 4,
-        baths: 2,
-        sqft: 160,
-        type: "dom",
-        status: "sprzedaz",
-        image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=2670&auto=format&fit=crop",
-        featured: false,
-        description: "Pasywny dom z panelami fotowoltaicznymi, pompą ciepła i rekuperacją."
-    },
-];
+
 
 type PropertyType = 'wszystkie' | 'dom' | 'mieszkanie' | 'dzialka';
 type PropertyStatus = 'wszystkie' | 'sprzedaz' | 'wynajem';
 
 export function Properties() {
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
@@ -448,6 +337,7 @@ export function Properties() {
                                         display: viewMode === 'list' ? 'flex' : 'block',
                                         cursor: 'pointer'
                                     }}
+                                    onClick={() => navigate(`/oferty/${property.id}`)}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-4px)';
                                         e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
