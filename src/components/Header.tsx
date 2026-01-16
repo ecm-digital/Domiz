@@ -10,7 +10,7 @@ export function Header() {
                 </Link>
 
                 <nav className="main-nav">
-                    {['Strona główna', 'Kalkulatory', 'Blog', 'Usługi', 'O Tłuszczu', 'Smart Home'].map((item) => (
+                    {['Strona główna', 'Kalkulatory', 'Blog', 'Usługi', 'Osiedle Tłuszcz', 'Smart Home'].map((item) => (
                         <Link
                             key={item}
                             to={item === 'Strona główna' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
