@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { PropertyCard } from '../components/PropertyCard';
 import { ArrowRight, Star, Shield, Clock } from 'lucide-react';
@@ -35,9 +36,9 @@ const FEATURED_PROPERTIES = [
     }
 ];
 
-
-
 export function Home() {
+    const navigate = useNavigate();
+
     return (
         <div style={{ minHeight: '100vh' }}>
             <Hero />
@@ -105,6 +106,7 @@ export function Home() {
                         }}
                             onMouseEnter={(e) => e.currentTarget.style.gap = '0.75rem'}
                             onMouseLeave={(e) => e.currentTarget.style.gap = '0.5rem'}
+                            onClick={() => navigate('/oferty')}
                         >
                             Zobacz wszystkie <ArrowRight size={20} />
                         </button>
@@ -140,10 +142,10 @@ export function Home() {
                             Skontaktuj się z nami już dziś. Pomożemy Ci znaleźć Twój wymarzony nowy dom.
                         </p>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <button className="btn-primary">
+                            <button className="btn-primary" onClick={() => navigate('/osiedle-tluszcz')}>
                                 Skontaktuj się z nami
                             </button>
-                            <button className="btn-secondary">
+                            <button className="btn-secondary" onClick={() => navigate('/kalkulatory')}>
                                 Zobacz kalkulatory
                             </button>
                         </div>

@@ -1,6 +1,16 @@
+import { useState } from 'react';
 import { Search, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function Hero() {
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        navigate(`/oferty?search=${encodeURIComponent(searchQuery)}`);
+    };
+
     return (
         <section className="hero-section">
             <div className="hero-bg-overlay" />
@@ -9,8 +19,11 @@ export function Hero() {
                 <div className="hero-content">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', width: 'fit-content' }}>
                         <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            <span style={{
+                                position: 'absolute', display: 'inline-flex', height: '100%', width: '100%',
+                                borderRadius: '50%', background: '#34d399', opacity: 0.75, animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite'
+                            }}></span>
+                            <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: '0.5rem', width: '0.5rem', background: '#10b981' }}></span>
                         </span>
                         <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: '0.5rem' }}>Nowoczesne Nieruchomości</span>
                     </div>
@@ -26,11 +39,11 @@ export function Hero() {
                     </p>
 
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                        <button className="btn-primary">
+                        <button className="btn-primary" onClick={() => navigate('/oferty')}>
                             Przeglądaj Oferty
                             <ArrowRight size={20} />
                         </button>
-                        <button style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid #374151', color: 'white', background: 'transparent', cursor: 'pointer', fontWeight: '500' }}>
+                        <button style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid #374151', color: 'white', background: 'transparent', cursor: 'pointer', fontWeight: '500' }} onClick={() => navigate('/dodaj-nieruchomosc')}>
                             Sprzedaj Nieruchomość
                         </button>
                     </div>
@@ -53,18 +66,20 @@ export function Hero() {
 
                 {/* Search Card */}
                 <div style={{ position: 'relative' }} className="md:block">
-                    <div className="search-card">
+                    <form onSubmit={handleSearch} className="search-card">
                         <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', marginTop: 0 }}>Szybkie Wyszukiwanie</h3>
 
                         <div className="search-input-group">
-                            <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Lokalizacja</label>
+                            <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Lokalizacja lub nazwa</label>
                             <div style={{ position: 'relative' }}>
                                 <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Wpisz miasto..."
+                                    placeholder="Wpisz miasto, ulicę..."
                                     className="search-input"
                                     style={{ paddingLeft: '2.5rem' }}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -73,23 +88,27 @@ export function Hero() {
                             <div>
                                 <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Typ</label>
                                 <select className="search-input">
-                                    <option>Dom wolnostojący</option>
+                                    <option>Wszystkie</option>
+                                    <option>Dom</option>
                                     <option>Mieszkanie</option>
+                                    <option>Działka</option>
                                 </select>
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Cena do</label>
                                 <select className="search-input">
-                                    <option>750 000 PLN</option>
+                                    <option>Dowolna</option>
+                                    <option>500 000 PLN</option>
                                     <option>1 000 000 PLN</option>
+                                    <option>2 000 000 PLN</option>
                                 </select>
                             </div>
                         </div>
 
-                        <button className="btn-primary" style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center' }}>
+                        <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center' }}>
                             Szukaj
                         </button>
-                    </div>
+                    </form>
                 </div>
             </div>
         </section>

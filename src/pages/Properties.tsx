@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MapPin, Bed, Bath, Square, ArrowRight, Search, SlidersHorizontal, Grid, List, Heart, X } from 'lucide-react';
 
 const PROPERTIES = [
@@ -120,7 +121,15 @@ type PropertyType = 'wszystkie' | 'dom' | 'mieszkanie' | 'dzialka';
 type PropertyStatus = 'wszystkie' | 'sprzedaz' | 'wynajem';
 
 export function Properties() {
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams] = useSearchParams();
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+
+    useEffect(() => {
+        const query = searchParams.get('search');
+        if (query !== null) {
+            setSearchQuery(query);
+        }
+    }, [searchParams]);
     const [propertyType, setPropertyType] = useState<PropertyType>('wszystkie');
     const [propertyStatus, setPropertyStatus] = useState<PropertyStatus>('wszystkie');
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000000]);
