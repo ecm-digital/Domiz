@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postbuild": "node scripts/generate-pages.js"
   },
   "dependencies": {
     "@types/matter-js": "^0.20.2",
+    "firebase": "^12.9.0",
     "lucide-react": "^0.561.0",
     "matter-js": "^0.20.0",
     "react": "^19.2.0",

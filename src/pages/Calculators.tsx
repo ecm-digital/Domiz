@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calculator, Home, CreditCard, Info, AlertCircle } from 'lucide-react';
+import { Breadcrumbs } from '../components/Breadcrumbs';
+import { trackEvent } from '../utils/analytics';
 
 // Building cost rates per m2
 const COST_RATES = {
@@ -16,6 +19,7 @@ const BUILDING_STEPS = [
 ];
 
 export function Calculators() {
+    const navigate = useNavigate();
     // Building calculator state
     const [houseArea, setHouseArea] = useState(120);
     const [plotArea, setPlotArea] = useState(500);
@@ -48,7 +52,10 @@ export function Calculators() {
     };
 
     return (
-        <div style={{ background: '#f8faf9', minHeight: '100vh', paddingTop: '100px' }}>
+        <div style={{ background: 'var(--color-bg-light)', minHeight: '100vh', paddingTop: '100px' }}>
+            <div className="container" style={{ paddingTop: '1rem' }}>
+                <Breadcrumbs items={[{ label: 'Kalkulatory' }]} />
+            </div>
             {/* Hero Section */}
             <section style={{ textAlign: 'center', padding: '2rem 0 3rem' }}>
                 <div className="container">
@@ -66,12 +73,12 @@ export function Calculators() {
                     <h1 style={{
                         fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
                         fontWeight: '800',
-                        color: '#1f2937',
+                        color: 'var(--color-text-main)',
                         marginBottom: '1rem'
                     }}>
                         Kalkulatory - Kredyt i Budowa
                     </h1>
-                    <p style={{ color: '#6b7280', maxWidth: '600px', margin: '0 auto' }}>
+                    <p style={{ color: 'var(--color-text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
                         Oblicz koszty budowy domu oraz miesięczną ratę kredytu hipotecznego. Firma wyręczy Twojego projektanta w Tłuszczu.
                     </p>
                 </div>
@@ -131,7 +138,7 @@ export function Calculators() {
                         textAlign: 'center',
                         fontSize: '1.5rem',
                         fontWeight: '700',
-                        color: '#1f2937',
+                        color: 'var(--color-text-main)',
                         marginBottom: '2rem'
                     }}>
                         Kalkulator Kosztów Budowy
@@ -144,7 +151,7 @@ export function Calculators() {
                     }}>
                         {/* Left - Inputs */}
                         <div style={{
-                            background: '#f8faf9',
+                            background: 'var(--color-bg-light-alt)',
                             padding: '2rem',
                             borderRadius: '1rem'
                         }}>
@@ -327,7 +334,7 @@ export function Calculators() {
             </section>
 
             {/* Mortgage Calculator */}
-            <section style={{ padding: '3rem 0', background: '#f8faf9' }}>
+            <section style={{ padding: '3rem 0', background: 'var(--color-bg-light)' }}>
                 <div className="container">
                     <h2 style={{
                         textAlign: 'center',
@@ -515,12 +522,23 @@ export function Calculators() {
                                 </div>
                             </div>
 
-                            <button className="btn-primary" style={{
-                                width: '100%',
-                                marginTop: '1rem',
-                                justifyContent: 'center',
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                            }}>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                style={{
+                                    width: '100%',
+                                    marginTop: '1rem',
+                                    justifyContent: 'center',
+                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                                }}
+                                onClick={() => {
+                                    trackEvent('lead_contact_click', {
+                                        type: 'form',
+                                        source: 'calculators_page',
+                                    });
+                                    navigate('/osiedle-tluszcz#kontakt');
+                                }}
+                            >
                                 Skontaktuj się z nami
                             </button>
                         </div>

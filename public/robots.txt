@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /ulubione
+Disallow: /dodaj-nieruchomosc
+
+Sitemap: https://domizhomes.com/sitemap.xml

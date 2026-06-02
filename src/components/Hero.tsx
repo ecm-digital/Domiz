@@ -1,115 +1,153 @@
 import { useState } from 'react';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { trackEvent } from '../utils/analytics';
+import { useLanguage } from '../context/useLanguage';
 
 export function Hero() {
     const navigate = useNavigate();
+    const { t } = useLanguage();
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchType, setSearchType] = useState('');
+    const [searchMaxPrice, setSearchMaxPrice] = useState('');
+
+    const priceOptions: { label: string; value: string }[] = [
+        { label: t('common.any'), value: '' },
+        { label: '500 000 PLN', value: '500000' },
+        { label: '1 000 000 PLN', value: '1000000' },
+        { label: '2 000 000 PLN', value: '2000000' },
+    ];
+
+    const typeOptions: { label: string; value: string }[] = [
+        { label: t('common.all'), value: '' },
+        { label: t('common.house'), value: 'dom' },
+        { label: t('common.apartment'), value: 'mieszkanie' },
+        { label: t('common.land'), value: 'dzialka' },
+    ];
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        navigate(`/oferty?search=${encodeURIComponent(searchQuery)}`);
+        const params = new URLSearchParams();
+        if (searchQuery.trim()) params.set('search', searchQuery.trim());
+        if (searchType) params.set('type', searchType);
+        if (searchMaxPrice) params.set('maxPrice', searchMaxPrice);
+        trackEvent('hero_search_submit', {
+            search_query: searchQuery.trim() || 'all',
+            property_type: searchType || 'all',
+            max_price: searchMaxPrice || 'none',
+        });
+        navigate(`/oferty?${params.toString()}`);
     };
 
     return (
         <section className="hero-section">
-            <div className="hero-bg-overlay" />
-
             <div className="container hero-grid">
                 <div className="hero-content">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', width: 'fit-content' }}>
-                        <span className="relative flex h-2 w-2">
-                            <span style={{
-                                position: 'absolute', display: 'inline-flex', height: '100%', width: '100%',
-                                borderRadius: '50%', background: '#34d399', opacity: 0.75, animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite'
-                            }}></span>
-                            <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: '0.5rem', width: '0.5rem', background: '#10b981' }}></span>
-                        </span>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: '0.5rem' }}>Nowoczesne Nieruchomości</span>
+                    <div className="hero-badge">
+                        <span className="hero-badge-dot" />
+                        <span>{t('hero.badge')}</span>
                     </div>
 
-                    <h1>
-                        Znajdź Swoje <br />
-                        <span className="text-gradient">Wymarzone Miejsce</span>
+                    <h1 className="hero-title">
+                        {t('hero.titleTop')} <br />
+                        <span className="text-gradient">Domiz Homes</span>
                     </h1>
 
-                    <p style={{ color: '#9ca3af', fontSize: '1.25rem', maxWidth: '600px', marginBottom: '2rem', lineHeight: '1.6' }}>
-                        Odkryj wyselekcjonowane oferty domów i mieszkań w Tłuszczu i okolicach.
-                        Łączymy technologię z pasją do nieruchomości.
+                    <p className="hero-subtitle">
+                        {t('hero.subtitle')}
                     </p>
 
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                        <button className="btn-primary" onClick={() => navigate('/oferty')}>
-                            Przeglądaj Oferty
-                            <ArrowRight size={20} />
+                    <div className="hero-actions">
+                        <button className="btn-primary hero-btn-primary" onClick={() => {
+                            trackEvent('hero_cta_click', { cta: 'browse_offers' });
+                            navigate('/oferty');
+                        }}>
+                            {t('hero.browse')}
+                            <ArrowRight size={20} strokeWidth={2.5} />
                         </button>
-                        <button style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid #374151', color: 'white', background: 'transparent', cursor: 'pointer', fontWeight: '500' }} onClick={() => navigate('/dodaj-nieruchomosc')}>
-                            Sprzedaj Nieruchomość
+                        <button className="btn-secondary hero-btn-secondary" onClick={() => {
+                            trackEvent('hero_cta_click', { cta: 'sell_property' });
+                            navigate('/dodaj-nieruchomosc');
+                        }}>
+                            {t('hero.sell')}
                         </button>
                     </div>
 
                     <div className="hero-stats">
-                        <div>
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>150+</p>
-                            <p style={{ color: '#6b7280', fontSize: '0.875rem', textTransform: 'uppercase', margin: 0 }}>Ofert</p>
+                        <div className="hero-stat">
+                            <span className="hero-stat-value">150+</span>
+                            <span className="hero-stat-label">{t('hero.offers')}</span>
                         </div>
-                        <div>
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>85+</p>
-                            <p style={{ color: '#6b7280', fontSize: '0.875rem', textTransform: 'uppercase', margin: 0 }}>Sprzedanych</p>
+                        <div className="hero-stat-divider" />
+                        <div className="hero-stat">
+                            <span className="hero-stat-value">85+</span>
+                            <span className="hero-stat-label">{t('hero.sold')}</span>
                         </div>
-                        <div>
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>12+</p>
-                            <p style={{ color: '#6b7280', fontSize: '0.875rem', textTransform: 'uppercase', margin: 0 }}>Lat Doświadczenia</p>
+                        <div className="hero-stat-divider" />
+                        <div className="hero-stat">
+                            <span className="hero-stat-value">3</span>
+                            <span className="hero-stat-label">{t('hero.experience')}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Search Card */}
-                <div style={{ position: 'relative' }} className="md:block">
-                    <form onSubmit={handleSearch} className="search-card">
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', marginTop: 0 }}>Szybkie Wyszukiwanie</h3>
+                <div className="hero-search-wrap">
+                    <div className="hero-media-grid" aria-hidden="true">
+                        <div className="hero-media-large">
+                            <img src="/properties/gwiazdy/salon.jpg" alt="" />
+                        </div>
+                        <div className="hero-media-small">
+                            <img src="/properties/gwiazdy/kuchnia.jpg" alt="" />
+                        </div>
+                        <div className="hero-media-small">
+                            <img src="/properties/gwiazdy/pokoj.jpg" alt="" />
+                        </div>
+                    </div>
+                    <form onSubmit={handleSearch} className="search-card hero-search-card">
+                        <h3 className="search-card-title">{t('hero.searchTitle')}</h3>
 
                         <div className="search-input-group">
-                            <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Lokalizacja lub nazwa</label>
-                            <div style={{ position: 'relative' }}>
-                                <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} size={18} />
+                            <label>{t('hero.locationLabel')}</label>
+                            <div className="search-input-wrap">
+                                <Search size={18} className="search-icon" />
                                 <input
                                     type="text"
-                                    placeholder="Wpisz miasto, ulicę..."
+                                    placeholder={t('hero.locationPlaceholder')}
                                     className="search-input"
-                                    style={{ paddingLeft: '2.5rem' }}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Typ</label>
-                                <select className="search-input">
-                                    <option>Wszystkie</option>
-                                    <option>Dom</option>
-                                    <option>Mieszkanie</option>
-                                    <option>Działka</option>
+                        <div className="search-filters">
+                            <div className="search-filter">
+                                <label>{t('hero.type')}</label>
+                                <select className="search-input" value={searchType} onChange={(e) => setSearchType(e.target.value)}>
+                                    {typeOptions.map((o) => (
+                                        <option key={o.value || 'all'} value={o.value}>{o.label}</option>
+                                    ))}
                                 </select>
                             </div>
-                            <div>
-                                <label style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Cena do</label>
-                                <select className="search-input">
-                                    <option>Dowolna</option>
-                                    <option>500 000 PLN</option>
-                                    <option>1 000 000 PLN</option>
-                                    <option>2 000 000 PLN</option>
+                            <div className="search-filter">
+                                <label>{t('hero.maxPrice')}</label>
+                                <select className="search-input" value={searchMaxPrice} onChange={(e) => setSearchMaxPrice(e.target.value)}>
+                                    {priceOptions.map((o) => (
+                                        <option key={o.value || 'any'} value={o.value}>{o.label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
 
-                        <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center' }}>
-                            Szukaj
+                        <button type="submit" className="btn-primary search-submit-btn">
+                            {t('hero.search')}
                         </button>
                     </form>
                 </div>
+            </div>
+
+            <div className="hero-scroll-indicator" aria-hidden="true">
+                <ChevronDown size={24} />
             </div>
         </section>
     );

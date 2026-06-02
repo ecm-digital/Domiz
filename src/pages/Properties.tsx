@@ -1,38 +1,72 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { PROPERTIES } from '../data/properties';
-import { MapPin, Bed, Bath, Square, ArrowRight, Search, SlidersHorizontal, Grid, List, Heart, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { useProperties } from '../hooks/useProperties';
+import { PropertyCard } from '../components/PropertyCard';
+import { Breadcrumbs } from '../components/Breadcrumbs';
+import { Search, SlidersHorizontal, Grid, List, X } from 'lucide-react';
+import { trackEvent } from '../utils/analytics';
+import { useLanguage } from '../context/useLanguage';
 
 
 
 type PropertyType = 'wszystkie' | 'dom' | 'mieszkanie' | 'dzialka';
 type PropertyStatus = 'wszystkie' | 'sprzedaz' | 'wynajem';
 
+function PropertyCardSkeleton() {
+    return (
+        <div className="property-card-skeleton" aria-hidden="true">
+            <div className="skeleton-block skeleton-image" />
+            <div className="skeleton-line skeleton-line-title" />
+            <div className="skeleton-line skeleton-line-short" />
+            <div className="skeleton-stats">
+                <span />
+                <span />
+                <span />
+            </div>
+        </div>
+    );
+}
+
 export function Properties() {
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const urlSearch = searchParams.get('search') || '';
+    const urlType = searchParams.get('type') || '';
+    const urlMaxPrice = searchParams.get('maxPrice') || '';
+
+    const [searchQuery, setSearchQuery] = useState(urlSearch);
+    const { properties, loading } = useProperties();
+
+    const typeFromUrl = (urlType === 'dom' || urlType === 'mieszkanie' || urlType === 'dzialka') ? urlType : 'wszystkie';
+    const maxPriceFromUrl = urlMaxPrice ? Math.min(Number(urlMaxPrice) || 2000000, 2000000) : 2000000;
+
+    const [propertyType, setPropertyType] = useState<PropertyType>(typeFromUrl);
+    const [propertyStatus, setPropertyStatus] = useState<PropertyStatus>('wszystkie');
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPriceFromUrl]);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [showFilters, setShowFilters] = useState(!!urlType || !!urlMaxPrice);
+    const { t, language } = useLanguage();
 
     useEffect(() => {
-        const query = searchParams.get('search');
-        if (query !== null) {
-            setSearchQuery(query);
-        }
-    }, [searchParams]);
-    const [propertyType, setPropertyType] = useState<PropertyType>('wszystkie');
-    const [propertyStatus, setPropertyStatus] = useState<PropertyStatus>('wszystkie');
-    const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000000]);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [showFilters, setShowFilters] = useState(false);
-    const [favorites, setFavorites] = useState<number[]>([]);
+        setSearchQuery(urlSearch);
+        if (urlType === 'dom' || urlType === 'mieszkanie' || urlType === 'dzialka') setPropertyType(urlType);
+        if (urlMaxPrice) setPriceRange([0, Math.min(Number(urlMaxPrice), 2000000)]);
+    }, [urlSearch, urlType, urlMaxPrice]);
 
-    const toggleFavorite = (id: number) => {
-        setFavorites(prev =>
-            prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-        );
-    };
+    // Sync filtrów do URL (umożliwia udostępnianie linków z filtrami); debounce dla suwaka ceny
+    useEffect(() => {
+        const t = setTimeout(() => {
+            const params = new URLSearchParams();
+            if (searchQuery.trim()) params.set('search', searchQuery.trim());
+            if (propertyType !== 'wszystkie') params.set('type', propertyType);
+            if (priceRange[1] < 2000000 && priceRange[1] > 0) params.set('maxPrice', String(priceRange[1]));
+            const newQuery = params.toString();
+            const current = searchParams.toString();
+            if (newQuery !== current) setSearchParams(params, { replace: true });
+        }, 200);
+        return () => clearTimeout(t);
+    }, [searchQuery, propertyType, priceRange, searchParams, setSearchParams]);
 
-    const filteredProperties = PROPERTIES.filter(property => {
+    const filteredProperties = properties.filter(property => {
         const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             property.location.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = propertyType === 'wszystkie' || property.type === propertyType;
@@ -42,20 +76,18 @@ export function Properties() {
         return matchesSearch && matchesType && matchesStatus && matchesPrice;
     });
 
-    const formatPrice = (price: number, status: string) => {
-        if (status === 'wynajem') {
-            return `${price.toLocaleString('pl-PL')} zł/mies.`;
-        }
-        return `${price.toLocaleString('pl-PL')} zł`;
-    };
+
 
     return (
-        <div style={{ background: '#f8faf9', minHeight: '100vh', paddingTop: '100px' }}>
+        <div style={{ background: 'var(--color-bg-light)', minHeight: '100vh', paddingTop: '96px' }}>
+            <div className="container" style={{ paddingTop: '1rem' }}>
+                <Breadcrumbs items={[{ label: t('properties.breadcrumb') }]} />
+            </div>
             {/* Hero Section */}
             <section style={{
-                background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)',
-                padding: '3rem 0',
-                color: 'white'
+                background: 'white',
+                padding: '2.5rem 0 3rem',
+                color: 'var(--color-text-main)'
             }}>
                 <div className="container">
                     <h1 style={{
@@ -64,7 +96,7 @@ export function Properties() {
                         marginBottom: '0.5rem',
                         textAlign: 'center'
                     }}>
-                        Oferty Nieruchomości
+                        {t('properties.title')}
                     </h1>
                     <p style={{
                         textAlign: 'center',
@@ -73,17 +105,17 @@ export function Properties() {
                         maxWidth: '600px',
                         margin: '0 auto 2rem'
                     }}>
-                        Znajdź swój wymarzony dom lub mieszkanie w Tłuszczu i okolicach
+                        {t('properties.subtitle')}
                     </p>
 
                     {/* Search Bar */}
-                    <div style={{
+                    <div className="properties-search-bar" style={{
                         maxWidth: '700px',
                         margin: '0 auto',
                         display: 'flex',
                         gap: '0.5rem'
                     }}>
-                        <div style={{
+                        <div className="properties-search-input-wrap" style={{
                             flex: 1,
                             position: 'relative'
                         }}>
@@ -92,31 +124,39 @@ export function Properties() {
                                 left: '1rem',
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                color: '#6b7280'
+                                color: 'var(--color-text-muted)'
                             }} />
                             <input
                                 type="text"
-                                placeholder="Szukaj po nazwie lub lokalizacji..."
+                                placeholder={t('properties.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
                                     padding: '1rem 1rem 1rem 3rem',
-                                    borderRadius: '0.75rem',
-                                    border: 'none',
+                                    borderRadius: '999px',
+                                    border: '1px solid var(--color-border)',
+                                    background: 'white',
+                                    color: 'var(--color-text-main)',
                                     fontSize: '1rem',
-                                    outline: 'none'
+                                    outline: 'none',
+                                    boxShadow: 'var(--shadow-sm)'
                                 }}
                             />
                         </div>
                         <button
-                            onClick={() => setShowFilters(!showFilters)}
+                            className="properties-filter-button"
+                            onClick={() => {
+                                const nextState = !showFilters;
+                                setShowFilters(nextState);
+                                trackEvent('properties_filters_toggle', { open: nextState });
+                            }}
                             style={{
                                 padding: '0 1.25rem',
-                                borderRadius: '0.75rem',
-                                border: 'none',
-                                background: showFilters ? '#10b981' : 'white',
-                                color: showFilters ? 'white' : '#1f2937',
+                                borderRadius: '999px',
+                                border: '1px solid var(--color-border)',
+                                background: showFilters ? 'var(--color-text-main)' : 'white',
+                                color: showFilters ? 'white' : 'var(--color-text-main)',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -125,125 +165,125 @@ export function Properties() {
                             }}
                         >
                             <SlidersHorizontal size={20} />
-                            Filtry
+                            {t('properties.filters')}
                         </button>
                     </div>
                 </div>
             </section>
 
-            {/* Filters Panel */}
             {showFilters && (
-                <section style={{
-                    background: 'white',
-                    borderBottom: '1px solid #e5e7eb',
-                    padding: '1.5rem 0'
-                }}>
+                <section style={{ padding: '1rem 0' }}>
                     <div className="container">
-                        <div style={{
-                            display: 'flex',
-                            gap: '2rem',
-                            flexWrap: 'wrap',
-                            alignItems: 'flex-end'
-                        }}>
-                            {/* Type Filter */}
-                            <div>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '0.875rem',
-                                    color: '#6b7280',
-                                    marginBottom: '0.5rem'
-                                }}>
-                                    Typ nieruchomości
-                                </label>
-                                <select
-                                    value={propertyType}
-                                    onChange={(e) => setPropertyType(e.target.value as PropertyType)}
+                        <div className="glass-panel" style={{ padding: '1.5rem' }}>
+                            <div style={{
+                                display: 'flex',
+                                gap: '2rem',
+                                flexWrap: 'wrap',
+                                alignItems: 'flex-end'
+                            }}>
+                                {/* Type Filter */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '0.875rem',
+                                        color: 'var(--color-text-muted)',
+                                        marginBottom: '0.5rem'
+                                    }}>
+                                        {t('properties.typeLabel')}
+                                    </label>
+                                    <select
+                                        value={propertyType}
+                                        onChange={(e) => setPropertyType(e.target.value as PropertyType)}
+                                        style={{
+                                            padding: '0.625rem 1rem',
+                                            borderRadius: '999px',
+                                            border: '1px solid var(--color-border)',
+                                            background: 'white',
+                                            color: 'var(--color-text-main)',
+                                            fontSize: '0.95rem',
+                                            minWidth: '150px'
+                                        }}
+                                    >
+                                        <option value="wszystkie">{t('common.all')}</option>
+                                        <option value="dom">{t('common.houses')}</option>
+                                        <option value="mieszkanie">{t('common.apartments')}</option>
+                                        <option value="dzialka">{t('common.plots')}</option>
+                                    </select>
+                                </div>
+
+                                {/* Status Filter */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '0.875rem',
+                                        color: 'var(--color-text-muted)',
+                                        marginBottom: '0.5rem'
+                                    }}>
+                                        {t('properties.status')}
+                                    </label>
+                                    <select
+                                        value={propertyStatus}
+                                        onChange={(e) => setPropertyStatus(e.target.value as PropertyStatus)}
+                                        style={{
+                                            padding: '0.625rem 1rem',
+                                            borderRadius: '999px',
+                                            border: '1px solid var(--color-border)',
+                                            fontSize: '0.95rem',
+                                            minWidth: '150px'
+                                        }}
+                                    >
+                                        <option value="wszystkie">{t('common.all')}</option>
+                                        <option value="sprzedaz">{t('properties.forSale')}</option>
+                                        <option value="wynajem">{t('properties.forRent')}</option>
+                                    </select>
+                                </div>
+
+                                {/* Price Range */}
+                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '0.875rem',
+                                        color: 'var(--color-text-muted)',
+                                        marginBottom: '0.5rem'
+                                    }}>
+                                        {t('properties.priceTo')}: {priceRange[1].toLocaleString(language === 'en' ? 'en-US' : 'pl-PL')} zł
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="50000"
+                                        max="2000000"
+                                        step="50000"
+                                        value={priceRange[1]}
+                                        onChange={(e) => setPriceRange([0, Number(e.target.value)])}
+                                        style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+                                    />
+                                </div>
+
+                                {/* Clear Filters */}
+                                <button
+                                    onClick={() => {
+                                        setPropertyType('wszystkie');
+                                        setPropertyStatus('wszystkie');
+                                        setPriceRange([0, 2000000]);
+                                        setSearchQuery('');
+                                        trackEvent('properties_filters_cleared', { source: 'filters_panel' });
+                                    }}
                                     style={{
                                         padding: '0.625rem 1rem',
-                                        borderRadius: '0.5rem',
-                                        border: '1px solid #e5e7eb',
-                                        fontSize: '0.95rem',
-                                        minWidth: '150px'
+                                        borderRadius: '999px',
+                                        border: '1px solid var(--color-border)',
+                                        background: 'white',
+                                        color: 'var(--color-text-dim)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
                                     }}
                                 >
-                                    <option value="wszystkie">Wszystkie</option>
-                                    <option value="dom">Domy</option>
-                                    <option value="mieszkanie">Mieszkania</option>
-                                    <option value="dzialka">Działki</option>
-                                </select>
+                                    <X size={16} />
+                                    {t('properties.clear')}
+                                </button>
                             </div>
-
-                            {/* Status Filter */}
-                            <div>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '0.875rem',
-                                    color: '#6b7280',
-                                    marginBottom: '0.5rem'
-                                }}>
-                                    Status
-                                </label>
-                                <select
-                                    value={propertyStatus}
-                                    onChange={(e) => setPropertyStatus(e.target.value as PropertyStatus)}
-                                    style={{
-                                        padding: '0.625rem 1rem',
-                                        borderRadius: '0.5rem',
-                                        border: '1px solid #e5e7eb',
-                                        fontSize: '0.95rem',
-                                        minWidth: '150px'
-                                    }}
-                                >
-                                    <option value="wszystkie">Wszystkie</option>
-                                    <option value="sprzedaz">Na sprzedaż</option>
-                                    <option value="wynajem">Do wynajęcia</option>
-                                </select>
-                            </div>
-
-                            {/* Price Range */}
-                            <div style={{ flex: 1, minWidth: '200px' }}>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '0.875rem',
-                                    color: '#6b7280',
-                                    marginBottom: '0.5rem'
-                                }}>
-                                    Cena do: {priceRange[1].toLocaleString('pl-PL')} zł
-                                </label>
-                                <input
-                                    type="range"
-                                    min="50000"
-                                    max="2000000"
-                                    step="50000"
-                                    value={priceRange[1]}
-                                    onChange={(e) => setPriceRange([0, Number(e.target.value)])}
-                                    style={{ width: '100%', accentColor: '#10b981' }}
-                                />
-                            </div>
-
-                            {/* Clear Filters */}
-                            <button
-                                onClick={() => {
-                                    setPropertyType('wszystkie');
-                                    setPropertyStatus('wszystkie');
-                                    setPriceRange([0, 2000000]);
-                                    setSearchQuery('');
-                                }}
-                                style={{
-                                    padding: '0.625rem 1rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid #e5e7eb',
-                                    background: 'white',
-                                    color: '#6b7280',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                }}
-                            >
-                                <X size={16} />
-                                Wyczyść
-                            </button>
                         </div>
                     </div>
                 </section>
@@ -253,38 +293,44 @@ export function Properties() {
             <section style={{ padding: '2rem 0 4rem' }}>
                 <div className="container">
                     {/* Results Header */}
-                    <div style={{
+                    <div className="properties-results-header" style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         marginBottom: '1.5rem'
                     }}>
-                        <p style={{ color: '#6b7280', margin: 0 }}>
-                            Znaleziono <strong style={{ color: '#1f2937' }}>{filteredProperties.length}</strong> ofert
+                        <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>
+                            {t('properties.foundPrefix')} <strong style={{ color: 'var(--color-text-main)' }}>{filteredProperties.length}</strong> {t('properties.foundSuffix')}
                         </p>
 
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div className="properties-view-buttons" style={{ display: 'flex', gap: '0.5rem' }}>
                             <button
-                                onClick={() => setViewMode('grid')}
+                                onClick={() => {
+                                    setViewMode('grid');
+                                    trackEvent('properties_view_mode_change', { mode: 'grid' });
+                                }}
                                 style={{
                                     padding: '0.5rem',
                                     borderRadius: '0.5rem',
-                                    border: '1px solid #e5e7eb',
-                                    background: viewMode === 'grid' ? '#10b981' : 'white',
-                                    color: viewMode === 'grid' ? 'white' : '#6b7280',
+                                    border: '1px solid var(--color-border)',
+                                    background: viewMode === 'grid' ? 'var(--color-text-main)' : 'rgba(0,0,0,0.03)',
+                                    color: viewMode === 'grid' ? 'white' : 'var(--color-text-dim)',
                                     cursor: 'pointer'
                                 }}
                             >
                                 <Grid size={20} />
                             </button>
                             <button
-                                onClick={() => setViewMode('list')}
+                                onClick={() => {
+                                    setViewMode('list');
+                                    trackEvent('properties_view_mode_change', { mode: 'list' });
+                                }}
                                 style={{
                                     padding: '0.5rem',
                                     borderRadius: '0.5rem',
-                                    border: '1px solid #e5e7eb',
-                                    background: viewMode === 'list' ? '#10b981' : 'white',
-                                    color: viewMode === 'list' ? 'white' : '#6b7280',
+                                    border: '1px solid var(--color-border)',
+                                    background: viewMode === 'list' ? 'var(--color-text-main)' : 'white',
+                                    color: viewMode === 'list' ? 'white' : 'var(--color-text-dim)',
                                     cursor: 'pointer'
                                 }}
                             >
@@ -294,15 +340,28 @@ export function Properties() {
                     </div>
 
                     {/* Properties Grid/List */}
-                    {filteredProperties.length === 0 ? (
-                        <div style={{
+                    {loading ? (
+                        <div className="properties-loading-state">
+                            <div>
+                                <h3>{t('properties.loadingTitle')}</h3>
+                                <p>{t('properties.loadingDesc')}</p>
+                            </div>
+                            <div className="properties-skeleton-grid">
+                                {Array.from({ length: 6 }).map((_, index) => (
+                                    <PropertyCardSkeleton key={index} />
+                                ))}
+                            </div>
+                        </div>
+                    ) : filteredProperties.length === 0 ? (
+                        <div className="glass-panel" style={{
                             textAlign: 'center',
                             padding: '4rem 2rem',
-                            background: 'white',
-                            borderRadius: '1rem'
+                            marginTop: '2rem'
                         }}>
-                            <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
-                                Nie znaleziono ofert spełniających kryteria wyszukiwania.
+                            <Search size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: '#9ca3af' }} />
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{t('properties.emptyTitle')}</h3>
+                            <p style={{ color: '#9ca3af', fontSize: '1.125rem' }}>
+                                {t('properties.emptyDesc')}
                             </p>
                             <button
                                 onClick={() => {
@@ -310,225 +369,25 @@ export function Properties() {
                                     setPropertyStatus('wszystkie');
                                     setPriceRange([0, 2000000]);
                                     setSearchQuery('');
+                                    trackEvent('properties_filters_cleared', { source: 'empty_state' });
                                 }}
                                 className="btn-primary"
-                                style={{ marginTop: '1rem' }}
+                                style={{ marginTop: '1.5rem' }}
                             >
-                                Wyczyść filtry
+                                {t('properties.clearFilters')}
                             </button>
                         </div>
                     ) : (
-                        <div style={{
+                        <div className="properties-results-grid" style={{
                             display: 'grid',
                             gridTemplateColumns: viewMode === 'grid'
                                 ? 'repeat(auto-fill, minmax(320px, 1fr))'
-                                : '1fr',
-                            gap: '1.5rem'
+                                : '1fr', // For list view, show 1 column
+                            gap: '1.5rem',
+                            marginTop: '2rem'
                         }}>
                             {filteredProperties.map((property) => (
-                                <div
-                                    key={property.id}
-                                    style={{
-                                        background: 'white',
-                                        borderRadius: '1rem',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                                        transition: 'transform 0.2s, box-shadow 0.2s',
-                                        display: viewMode === 'list' ? 'flex' : 'block',
-                                        cursor: 'pointer'
-                                    }}
-                                    onClick={() => navigate(`/oferty/${property.id}`)}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(-4px)';
-                                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-                                    }}
-                                >
-                                    {/* Image */}
-                                    <div style={{
-                                        position: 'relative',
-                                        width: viewMode === 'list' ? '280px' : '100%',
-                                        height: viewMode === 'list' ? '200px' : '220px',
-                                        flexShrink: 0
-                                    }}>
-                                        <img
-                                            src={property.image}
-                                            alt={property.title}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover'
-                                            }}
-                                        />
-
-                                        {/* Badges */}
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: '1rem',
-                                            left: '1rem',
-                                            display: 'flex',
-                                            gap: '0.5rem'
-                                        }}>
-                                            <span style={{
-                                                background: property.status === 'sprzedaz'
-                                                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                                                    : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                                                color: 'white',
-                                                padding: '0.375rem 0.75rem',
-                                                borderRadius: '9999px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '600'
-                                            }}>
-                                                {property.status === 'sprzedaz' ? 'Na Sprzedaż' : 'Wynajem'}
-                                            </span>
-                                            {property.featured && (
-                                                <span style={{
-                                                    background: '#fbbf24',
-                                                    color: '#1f2937',
-                                                    padding: '0.375rem 0.75rem',
-                                                    borderRadius: '9999px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    Wyróżniona
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Favorite Button */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleFavorite(property.id);
-                                            }}
-                                            style={{
-                                                position: 'absolute',
-                                                top: '1rem',
-                                                right: '1rem',
-                                                width: '36px',
-                                                height: '36px',
-                                                borderRadius: '50%',
-                                                background: 'white',
-                                                border: 'none',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                cursor: 'pointer',
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                                            }}
-                                        >
-                                            <Heart
-                                                size={18}
-                                                fill={favorites.includes(property.id) ? '#ef4444' : 'none'}
-                                                color={favorites.includes(property.id) ? '#ef4444' : '#6b7280'}
-                                            />
-                                        </button>
-                                    </div>
-
-                                    {/* Content */}
-                                    <div style={{ padding: '1.25rem', flex: 1 }}>
-                                        <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'flex-start',
-                                            marginBottom: '0.5rem',
-                                            gap: '1rem'
-                                        }}>
-                                            <h3 style={{
-                                                fontSize: '1.125rem',
-                                                fontWeight: '600',
-                                                color: '#1f2937',
-                                                margin: 0
-                                            }}>
-                                                {property.title}
-                                            </h3>
-                                            <span style={{
-                                                color: '#10b981',
-                                                fontWeight: '700',
-                                                fontSize: '1.125rem',
-                                                whiteSpace: 'nowrap'
-                                            }}>
-                                                {formatPrice(property.price, property.status)}
-                                            </span>
-                                        </div>
-
-                                        <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            color: '#6b7280',
-                                            fontSize: '0.875rem',
-                                            marginBottom: '0.75rem'
-                                        }}>
-                                            <MapPin size={15} style={{ marginRight: '0.375rem' }} />
-                                            {property.location}
-                                        </div>
-
-                                        {viewMode === 'list' && (
-                                            <p style={{
-                                                color: '#6b7280',
-                                                fontSize: '0.875rem',
-                                                marginBottom: '1rem',
-                                                lineHeight: '1.6'
-                                            }}>
-                                                {property.description}
-                                            </p>
-                                        )}
-
-                                        {/* Stats */}
-                                        {property.type !== 'dzialka' && (
-                                            <div style={{
-                                                display: 'flex',
-                                                gap: '1.5rem',
-                                                paddingTop: '0.75rem',
-                                                borderTop: '1px solid #f3f4f6'
-                                            }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#6b7280' }}>
-                                                    <Bed size={16} />
-                                                    <span style={{ fontSize: '0.875rem' }}>{property.beds}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#6b7280' }}>
-                                                    <Bath size={16} />
-                                                    <span style={{ fontSize: '0.875rem' }}>{property.baths}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#6b7280' }}>
-                                                    <Square size={16} />
-                                                    <span style={{ fontSize: '0.875rem' }}>{property.sqft} m²</span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {property.type === 'dzialka' && (
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.375rem',
-                                                color: '#6b7280',
-                                                paddingTop: '0.75rem',
-                                                borderTop: '1px solid #f3f4f6'
-                                            }}>
-                                                <Square size={16} />
-                                                <span style={{ fontSize: '0.875rem' }}>Powierzchnia: {property.sqft} m²</span>
-                                            </div>
-                                        )}
-
-                                        {viewMode === 'list' && (
-                                            <button
-                                                className="btn-primary"
-                                                style={{
-                                                    marginTop: '1rem',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem'
-                                                }}
-                                            >
-                                                Zobacz szczegóły <ArrowRight size={16} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                <PropertyCard key={property.id} {...property} />
                             ))}
                         </div>
                     )}

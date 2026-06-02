@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Osiedle Tłuszcz - oferta Sasanka XL z garażem</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #172033;
+      background: #eef2f5;
+      font-family: "Inter", "Arial", sans-serif;
+      line-height: 1.45;
+    }
+
+    .page {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 17mm 17mm 15mm;
+      overflow: hidden;
+      background: #fbfcfb;
+      page-break-after: always;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .cover {
+      padding: 0;
+      color: #ffffff;
+      background: #111827;
+    }
+
+    .cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(10, 18, 31, 0.92) 0%, rgba(10, 18, 31, 0.74) 45%, rgba(10, 18, 31, 0.08) 100%);
+      z-index: 1;
+    }
+
+    .cover img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cover-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 297mm;
+      padding: 20mm 17mm 15mm;
+      width: 58%;
+    }
+
+    .brand {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #34d399;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      margin-top: 32mm;
+      font-size: 44px;
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      margin-top: 8mm;
+      max-width: 116mm;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 16px;
+    }
+
+    .cover-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+      margin-top: 13mm;
+    }
+
+    .cover-stat {
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .cover-stat strong {
+      display: block;
+      color: #ffffff;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .cover-stat span {
+      display: block;
+      margin-top: 4px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 9px;
+    }
+
+    .cover-contact {
+      display: grid;
+      gap: 4px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 12px;
+    }
+
+    .cover-contact strong {
+      color: #ffffff;
+      font-size: 15px;
+    }
+
+    .eyebrow {
+      margin-bottom: 5mm;
+      color: #0f9f6e;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      max-width: 142mm;
+      color: #111827;
+      font-size: 30px;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+    }
+
+    h3 {
+      color: #111827;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .section-lead {
+      margin-top: 5mm;
+      max-width: 150mm;
+      color: #526070;
+      font-size: 12px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7mm;
+      margin-top: 9mm;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4mm;
+      margin-top: 7mm;
+    }
+
+    .card {
+      border: 1px solid #dbe4e8;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 5mm;
+    }
+
+    .card p,
+    .muted {
+      margin-top: 3mm;
+      color: #5b6878;
+      font-size: 10.5px;
+    }
+
+    .pill {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 3mm;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: #047857;
+      background: #dcfce7;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3mm;
+      margin-top: 9mm;
+    }
+
+    .fact {
+      padding: 4mm;
+      border-radius: 10px;
+      background: #ecfdf5;
+      color: #064e3b;
+    }
+
+    .fact strong {
+      display: block;
+      color: #065f46;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .fact span {
+      display: block;
+      margin-top: 4px;
+      font-size: 9px;
+    }
+
+    .image-card {
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .image-card img {
+      display: block;
+      width: 100%;
+      height: 72mm;
+      object-fit: cover;
+    }
+
+    .image-card .caption {
+      padding: 4mm 5mm;
+      color: #526070;
+      font-size: 10px;
+    }
+
+    .location-list {
+      display: grid;
+      gap: 3mm;
+      margin-top: 7mm;
+    }
+
+    .location-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 9px;
+      align-items: start;
+      font-size: 10.5px;
+      color: #526070;
+    }
+
+    .dot {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #10b981;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 8px;
+      font-size: 9.2px;
+    }
+
+    th {
+      padding: 7px;
+      color: #064e3b;
+      background: #d1fae5;
+      text-align: left;
+    }
+
+    td {
+      padding: 6px 7px;
+      border-bottom: 1px solid #e7eef2;
+      color: #3e4a59;
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .floorplan {
+      display: grid;
+      grid-template-columns: 73mm 1fr;
+      gap: 5mm;
+      margin-top: 7mm;
+      page-break-inside: avoid;
+    }
+
+    .floorplan img {
+      width: 73mm;
+      height: 56mm;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #f4f6f5;
+    }
+
+    .bullets {
+      display: grid;
+      gap: 5px;
+      margin: 4mm 0;
+      padding: 0;
+      list-style: none;
+      color: #4b5563;
+      font-size: 9.6px;
+    }
+
+    .bullets li::before {
+      content: "✓";
+      margin-right: 6px;
+      color: #059669;
+      font-weight: 800;
+    }
+
+    .packages {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5mm;
+      margin-top: 8mm;
+    }
+
+    .package {
+      min-height: 62mm;
+      border-top: 5px solid #10b981;
+    }
+
+    .package strong {
+      display: block;
+      margin: 3mm 0;
+      color: #0f766e;
+      font-size: 13px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 5mm;
+      margin-top: 8mm;
+    }
+
+    .gallery-main img {
+      width: 100%;
+      height: 94mm;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    .gallery-side {
+      display: grid;
+      gap: 4mm;
+    }
+
+    .gallery-side img {
+      width: 100%;
+      height: 29mm;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    .cta-box {
+      margin-top: 9mm;
+      padding: 8mm;
+      border-radius: 14px;
+      color: #ffffff;
+      background: #10251f;
+    }
+
+    .cta-box h2 {
+      color: #ffffff;
+      font-size: 26px;
+    }
+
+    .cta-box p {
+      margin-top: 4mm;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 12px;
+    }
+
+    .cta-contact {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3mm;
+      margin-top: 7mm;
+    }
+
+    .cta-contact div {
+      padding: 4mm;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 10px;
+    }
+
+    .cta-contact strong {
+      display: block;
+      margin-top: 2mm;
+      color: #ffffff;
+      font-size: 11px;
+    }
+
+    .footer {
+      position: absolute;
+      left: 17mm;
+      right: 17mm;
+      bottom: 8mm;
+      display: flex;
+      justify-content: space-between;
+      color: #8a96a3;
+      font-size: 8.5px;
+    }
+
+    .note {
+      margin-top: 5mm;
+      color: #758294;
+      font-size: 8.5px;
+    }
+  </style>
+</head>
+<body>
+  <section class="page cover">
+    <img src="./assets/cover-salon.jpg" alt="Salon Sasanka XL" />
+    <div class="cover-content">
+      <div>
+        <div class="brand">Domiz Homes</div>
+        <h1>Osiedle Tłuszcz</h1>
+        <p class="lead">Sasanka XL z garażem w kameralnej inwestycji przy ul. Zaściankowej. Powstają dwa bliźniaki oraz jeden dom wolnostojący.</p>
+        <div class="cover-stats">
+          <div class="cover-stat"><strong>5</strong><span>domów w inwestycji</span></div>
+          <div class="cover-stat"><strong>2+1</strong><span>dwa bliźniaki i wolnostojący</span></div>
+          <div class="cover-stat"><strong>ok. 83 m²</strong><span>Sasanka XL z garażem</span></div>
+          <div class="cover-stat"><strong>Tłuszcz</strong><span>spokojna lokalizacja z PKP</span></div>
+        </div>
+      </div>
+      <div class="cover-contact">
+        <strong>Tomasz Gnat | Domiz Homes</strong>
+        <span>+48 517 303 400</span>
+        <span>hello@domizhomes.com</span>
+        <span>domizhomes.com/osiedle-tluszcz</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Oferta inwestycji</div>
+    <h2>Mała skala, rodzinny układ i realna alternatywa dla mieszkania w bloku</h2>
+    <p class="section-lead">Osiedle Tłuszcz to inwestycja dla osób, które chcą mieć własny ogród, garaż i spokojniejszą przestrzeń do życia, ale nadal potrzebują kontaktu z miastem, koleją i codziennymi usługami.</p>
+    <div class="facts">
+      <div class="fact"><strong>5</strong><span>domów łącznie</span></div>
+      <div class="fact"><strong>3</strong><span>sypialnie na piętrze</span></div>
+      <div class="fact"><strong>2</strong><span>łazienki w układzie</span></div>
+      <div class="fact"><strong>1</strong><span>garaż przy każdym domu</span></div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <span class="pill">Bliźniak A</span>
+        <h3>Sasanka XL z garażem</h3>
+        <p>Segment w zabudowie bliźniaczej z prywatnym ogrodem i garażem w bryle.</p>
+      </div>
+      <div class="card">
+        <span class="pill">Bliźniak B</span>
+        <h3>Sasanka XL z garażem</h3>
+        <p>Drugi bliźniak w tym samym układzie, z osobnym wjazdem i analogicznym standardem.</p>
+      </div>
+      <div class="card">
+        <span class="pill">Dom wolnostojący</span>
+        <h3>Największa prywatność</h3>
+        <p>Opcja dla kupujących, którzy chcą więcej przestrzeni wokół budynku.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card image-card">
+        <img src="./assets/wnetrza.jpg" alt="Strefa dzienna Sasanka XL" />
+        <div class="caption">Przykładowe wnętrze modelowej Sasanki XL. Zdjęcia mają charakter poglądowy.</div>
+      </div>
+      <div class="card">
+        <span class="pill">Lokalizacja</span>
+        <h3>ul. Zaściankowa, Tłuszcz</h3>
+        <p>Tłuszcz leży w powiecie wołomińskim. To praktyczna lokalizacja dla rodzin, które szukają spokojniejszego miejsca do życia z dostępem do PKP, szkół, sklepów i usług.</p>
+        <div class="location-list">
+          <div class="location-item"><span class="dot">1</span><span><strong>PKP Tłuszcz</strong><br />kolejowy dojazd w stronę Warszawy i okolic</span></div>
+          <div class="location-item"><span class="dot">2</span><span><strong>Centrum i usługi</strong><br />codzienne sprawy w zasięgu miasta</span></div>
+          <div class="location-item"><span class="dot">3</span><span><strong>Szkoły i przedszkola</strong><br />zaplecze edukacyjne dla rodzin</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>Domiz Homes</span><span>Osiedle Tłuszcz | 2</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Układ domu</div>
+    <h2>Sasanka XL z garażem: parter dzienny i piętro z trzema sypialniami</h2>
+    <p class="section-lead">Układ jest prosty do zrozumienia: na dole strefa dzienna, kuchnia, łazienka i garaż; na górze trzy pokoje, łazienka, garderoba i miejsce do przechowywania.</p>
+    <div class="floorplan">
+      <img src="./assets/rzut-parter.jpg" alt="Rzut parteru Sasanka XL" />
+      <div>
+        <span class="pill">Parter</span>
+        <h3>Salon, kuchnia i garaż w bryle</h3>
+        <ul class="bullets">
+          <li>Przestronny salon</li>
+          <li>Widna kuchnia z możliwością wydzielenia</li>
+          <li>Koszty utrzymania porównywalne z mieszkaniem ok. 50 m²</li>
+        </ul>
+        <table>
+          <thead><tr><th>Nr</th><th>Pomieszczenie</th><th>Pow.</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Wiatrołap</td><td>3,74 m²</td></tr>
+            <tr><td>2</td><td>Łazienka</td><td>5,40 m²</td></tr>
+            <tr><td>3</td><td>Salon</td><td>22,47 m²</td></tr>
+            <tr><td>4</td><td>Kuchnia</td><td>7,79 m²</td></tr>
+            <tr><td>5</td><td>Schowek</td><td>0,73 m²</td></tr>
+            <tr><td>6</td><td>Garaż</td><td>18,09 m²</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="floorplan">
+      <img src="./assets/rzut-pietro.jpg" alt="Rzut piętra Sasanka XL" />
+      <div>
+        <span class="pill">Piętro</span>
+        <h3>Trzy sypialnie, duża łazienka i garderoba</h3>
+        <ul class="bullets">
+          <li>3 sypialnie i duża łazienka</li>
+          <li>4 duże szafy, schowek pod schodami oraz garderoba</li>
+          <li>Pojemny strych</li>
+        </ul>
+        <table>
+          <thead><tr><th>Nr</th><th>Pomieszczenie</th><th>Pow.</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Schody</td><td>5,39 m²</td></tr>
+            <tr><td>2</td><td>Łazienka</td><td>6,83 m²</td></tr>
+            <tr><td>3</td><td>Pokój 1</td><td>9,11 m²</td></tr>
+            <tr><td>4</td><td>Pokój 2</td><td>9,11 m²</td></tr>
+            <tr><td>5</td><td>Korytarz</td><td>3,72 m²</td></tr>
+            <tr><td>6</td><td>Garderoba</td><td>2,01 m²</td></tr>
+            <tr><td>7</td><td>Pokój 3</td><td>6,70 m²</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="footer"><span>Domiz Homes</span><span>Osiedle Tłuszcz | 3</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Cennik i standard</div>
+    <h2>4 warianty wyposażenia do rozmowy z klientem</h2>
+    <p class="section-lead">Finalna cena zależy od wybranego domu, dostępności i zakresu wyposażenia. Poniższe warianty porządkują rozmowę i pomagają szybko dopasować ofertę do budżetu oraz oczekiwań.</p>
+    <div class="packages">
+      <div class="card package">
+        <span class="pill">Baza</span>
+        <h3>Deweloperski</h3>
+        <strong>Cena na zapytanie</strong>
+        <p>Dla osób, które chcą samodzielnie zaplanować wykończenie i kontrolować budżet.</p>
+        <ul class="bullets">
+          <li>dom Sasanka XL z garażem</li>
+          <li>układ 3 sypialnie + 2 łazienki</li>
+          <li>ogród i miejsce na taras</li>
+          <li>materiały inwestycji i rzuty</li>
+        </ul>
+      </div>
+      <div class="card package">
+        <span class="pill">Popularny</span>
+        <h3>Komfort</h3>
+        <strong>Wycena po kontakcie</strong>
+        <p>Rozsądny pakiet dla rodzin, które chcą szybciej przejść od zakupu do wykończenia.</p>
+        <ul class="bullets">
+          <li>zakres deweloperski</li>
+          <li>konsultacja układu funkcjonalnego</li>
+          <li>propozycja wykończenia łazienek</li>
+          <li>lista rekomendowanych materiałów</li>
+        </ul>
+      </div>
+      <div class="card package">
+        <span class="pill">Wyższy standard</span>
+        <h3>Premium</h3>
+        <strong>Wycena indywidualna</strong>
+        <p>Dla kupujących, którzy chcą wyższy standard materiałów i spójny efekt wnętrza.</p>
+        <ul class="bullets">
+          <li>zakres Komfort</li>
+          <li>propozycja kuchni i zabudów</li>
+          <li>standard materiałów premium</li>
+          <li>harmonogram prac wykończeniowych</li>
+        </ul>
+      </div>
+      <div class="card package">
+        <span class="pill">Najwygodniej</span>
+        <h3>Pod klucz</h3>
+        <strong>Oferta po rozmowie</strong>
+        <p>Najmniej angażujący wariant dla osób, które chcą dostać gotowy plan i jedną ścieżkę działania.</p>
+        <ul class="bullets">
+          <li>zakres Premium</li>
+          <li>pełna koncepcja wnętrz</li>
+          <li>koordynacja ekip i dostaw</li>
+          <li>przygotowanie do zamieszkania</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">Dokładny zakres standardu, dostępność i ceny wymagają potwierdzenia w rozmowie. Oferta nie stanowi oferty handlowej w rozumieniu Kodeksu cywilnego.</p>
+    <div class="footer"><span>Domiz Homes</span><span>Osiedle Tłuszcz | 4</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Obejrzyj podobny dom</div>
+    <h2>Najbliższy punkt odniesienia: realizacja Sasanka XL w Trojanach</h2>
+    <p class="section-lead">Dla klientów zainteresowanych Osiedlem Tłuszcz najważniejsze jest zobaczenie realnej skali domu. Podobne domy Sasanka XL można obejrzeć w Trojanach, dlatego warto potraktować tę wizytę jako naturalny kolejny krok przed decyzją.</p>
+    <div class="grid-2">
+      <div class="card">
+        <span class="pill">Podczas spotkania</span>
+        <h3>Co klient może sprawdzić na żywo?</h3>
+        <ul class="bullets">
+          <li>realną skalę domu Sasanka XL</li>
+          <li>układ salonu, kuchni, sypialni i łazienek</li>
+          <li>proporcje wnętrz w porównaniu do zdjęć i spaceru 3D</li>
+          <li>który dom w Tłuszczu najlepiej pasuje do rodziny</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="pill">Materiały online</span>
+        <h3>Przed spotkaniem</h3>
+        <p>Klient może obejrzeć galerię, rzuty oraz wirtualny spacer, a potem skonfrontować je z rzeczywistą przestrzenią podobnej realizacji.</p>
+        <p>Link do podstrony: domizhomes.com/osiedle-tluszcz</p>
+      </div>
+    </div>
+    <div class="gallery">
+      <div class="gallery-main">
+        <img src="./assets/kuchnia.jpg" alt="Kuchnia Sasanka XL" />
+      </div>
+      <div class="gallery-side">
+        <img src="./assets/schody.jpg" alt="Schody Sasanka XL" />
+        <img src="./assets/sypialnia.jpg" alt="Sypialnia Sasanka XL" />
+        <img src="./assets/lazienka.jpg" alt="Łazienka Sasanka XL" />
+      </div>
+    </div>
+    <div class="footer"><span>Domiz Homes</span><span>Osiedle Tłuszcz | 5</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Następny krok</div>
+    <h2>Poproś o aktualną cenę, dostępność i możliwy termin obejrzenia domu</h2>
+    <p class="section-lead">Najlepsza rozmowa zaczyna się od dwóch informacji: który wariant domu Cię interesuje i czy chcesz zobaczyć podobną realizację w Trojanach. Na tej podstawie przygotujemy aktualny status oraz dalszą ścieżkę.</p>
+    <div class="grid-3">
+      <div class="card">
+        <span class="pill">1</span>
+        <h3>Wybór domu</h3>
+        <p>Bliźniak A, Bliźniak B albo dom wolnostojący.</p>
+      </div>
+      <div class="card">
+        <span class="pill">2</span>
+        <h3>Wariant wyposażenia</h3>
+        <p>Deweloperski, Komfort, Premium albo Pod klucz.</p>
+      </div>
+      <div class="card">
+        <span class="pill">3</span>
+        <h3>Spotkanie</h3>
+        <p>Rozmowa, materiały i ewentualne obejrzenie domów w Trojanach.</p>
+      </div>
+    </div>
+    <div class="cta-box">
+      <h2>Skontaktuj się w sprawie Osiedla Tłuszcz</h2>
+      <p>Wyślemy aktualny cennik, dostępność domów oraz informacje o wariantach wyposażenia.</p>
+      <div class="cta-contact">
+        <div>Telefon<strong>+48 517 303 400</strong></div>
+        <div>E-mail<strong>hello@domizhomes.com</strong></div>
+        <div>Strona<strong>domizhomes.com/osiedle-tluszcz</strong></div>
+      </div>
+    </div>
+    <p class="note">Zdjęcia wnętrz i rzuty mają charakter poglądowy dla modelu Sasanka XL. Szczegóły inwestycji, dostępność, standard i cena wymagają indywidualnego potwierdzenia.</p>
+    <div class="footer"><span>Domiz Homes</span><span>Osiedle Tłuszcz | 6</span></div>
+  </section>
+</body>
+</html>

@@ -3,12 +3,12 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  color: white;
+  color: var(--color-text-main);
 }
 
 body {
   margin: 0;
-  background-color: #0f1115;
+  background-color: var(--color-bg-light);
   min-height: 100vh;
 }
 
@@ -16,5 +16,444 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #0f1115;
+  background: var(--color-bg-light);
+}
+
+/* Konfigurator domów modułowych – układ 2 kolumny → 1 na małych ekranach */
+.configurator-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2.5rem;
+  align-items: start;
+}
+.configurator-summary {
+  position: sticky;
+  top: calc(var(--header-height) + 2rem);
+  padding: 1.5rem !important;
+}
+.configurator-summary-title {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+}
+.configurator-summary-price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  margin: 0 0 0.75rem 0;
+}
+.configurator-summary-divider {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.configurator-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+.configurator-summary-row:last-child {
+  margin-bottom: 0;
+}
+.configurator-installments-preview {
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.configurator-installments-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.configurator-installments-link:hover { text-decoration: underline; }
+
+.configurator-summary-disclaimer {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+}
+.configurator-summary-cta {
+  margin-top: 0.25rem;
+}
+
+.configurator-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Pasek postępu wizarda */
+.configurator-progress {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+.configurator-progress-dot {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.configurator-progress-dot:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-main);
+}
+.configurator-progress-dot.active {
+  border-color: var(--color-primary);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-primary-dark);
+}
+.configurator-progress-dot-num {
+  line-height: 1;
+}
+
+/* Podgląd wizualny */
+.configurator-preview-block {
+  margin-bottom: 1.5rem;
+}
+.configurator-preview-wrap {
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--color-bg-light-alt);
+  border: 1px solid var(--color-border);
+  aspect-ratio: 16/10;
+}
+.configurator-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Nawigacja wizarda */
+.configurator-wizard-nav {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+.configurator-wizard-nav .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Budżet */
+.configurator-budget-label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+}
+.configurator-budget-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-main);
+  background: var(--color-bg-card);
+}
+.configurator-budget-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+.configurator-budget-warning {
+  font-size: 0.8rem;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Podświetlenie droższych opcji przy przekroczonym budżecie */
+.config-option--expensive {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  background: rgba(245, 158, 11, 0.06) !important;
+}
+
+/* Badge Porównaj */
+.configurator-compare-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 2rem;
+  border: 1px solid var(--color-primary);
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--color-primary-dark);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: auto;
+}
+.configurator-compare-badge:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+.configurator-top-bar .configurator-compare-badge {
+  margin-left: 0;
+}
+
+.configurator-summary-compare-btn {
+  margin-bottom: 0.5rem;
+}
+
+/* Modal porównania */
+.configurator-compare-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  overflow-y: auto;
+}
+.configurator-compare-modal {
+  background: var(--color-bg-card);
+  border-radius: 1.25rem;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.configurator-compare-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.configurator-compare-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.configurator-compare-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+}
+.configurator-compare-close:hover {
+  color: var(--color-text-main);
+  background: var(--color-bg-light-alt);
+}
+.configurator-compare-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+.configurator-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+.configurator-compare-card {
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--color-bg-light);
+}
+.configurator-compare-card-header {
+  padding: 1rem;
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.configurator-compare-card-header strong {
+  flex: 1;
+  min-width: 0;
+}
+.configurator-compare-card-price {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+.configurator-compare-card-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+}
+.configurator-compare-card-remove:hover {
+  color: #dc2626;
+}
+.configurator-compare-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+.configurator-compare-card-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  color: var(--color-text-secondary);
+}
+.configurator-compare-card-list li span:last-child {
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .configurator-layout {
+    grid-template-columns: 1fr;
+  }
+  .configurator-summary {
+    position: static;
+  }
+}
+
+/* Konfigurator – bloki opcji */
+.configurator-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.config-block {
+  padding: 1.25rem;
+  border-radius: 1rem;
+}
+.config-block-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: var(--color-text-main);
+}
+.config-radio-list,
+.config-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.config-radio-item,
+.config-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.config-radio-item:hover,
+.config-checkbox-item:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.config-radio-item--selected,
+.config-checkbox-item--selected {
+  border-color: var(--color-primary);
+  background: rgba(16, 185, 129, 0.06);
+}
+.config-option-thumb {
+  width: 80px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--color-bg-light-alt);
+}
+.config-option-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.config-radio-item input,
+.config-checkbox-item input {
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+.config-radio-label,
+.config-checkbox-label {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--color-text-main);
+  min-width: 0;
+}
+.config-radio-item--selected .config-option-thumb,
+.config-checkbox-item--selected .config-option-thumb {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+.config-radio-price,
+.config-checkbox-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.config-inquiry {
+  margin-top: 0.5rem;
+}
+.config-inquiry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.config-inquiry-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  color: var(--color-text-main);
+  background: var(--color-bg-card);
+}
+.config-inquiry-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+.config-inquiry-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.config-inquiry-consent input {
+  margin-top: 0.2rem;
+  accent-color: var(--color-primary);
+}
+.config-inquiry-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.25rem;
 }
