@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Search, ArrowRight, ChevronDown } from 'lucide-react';
+import { Search, ArrowRight, ChevronDown, MapPin, Home as HomeIcon, Wallet, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { trackEvent } from '../utils/analytics';
 import { useLanguage } from '../context/useLanguage';
+import './Hero.css';
 
 export function Hero() {
     const navigate = useNavigate();
@@ -25,6 +26,12 @@ export function Hero() {
         { label: t('common.land'), value: 'dzialka' },
     ];
 
+    const stats = [
+        { value: '150+', label: t('hero.offers') },
+        { value: '85+', label: t('hero.sold') },
+        { value: '3', label: t('hero.experience') },
+    ];
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         const params = new URLSearchParams();
@@ -40,114 +47,123 @@ export function Hero() {
     };
 
     return (
-        <section className="hero-section">
-            <div className="container hero-grid">
-                <div className="hero-content">
-                    <div className="hero-badge">
-                        <span className="hero-badge-dot" />
-                        <span>{t('hero.badge')}</span>
+        <section className="home-hero">
+            <div className="home-hero-glow" aria-hidden="true" />
+
+            <div className="container home-hero-inner">
+                <div className="home-hero-grid">
+                    <div className="home-hero-copy">
+                        <span className="home-hero-badge">
+                            <span className="home-hero-badge-dot" />
+                            {t('hero.badge')}
+                        </span>
+
+                        <h1 className="home-hero-title">
+                            {t('hero.titleTop')}
+                            <span className="home-hero-title-accent">Domiz Homes</span>
+                        </h1>
+
+                        <p className="home-hero-subtitle">
+                            {t('hero.subtitle')}
+                        </p>
+
+                        <div className="home-hero-actions">
+                            <button className="btn-primary" onClick={() => {
+                                trackEvent('hero_cta_click', { cta: 'browse_offers' });
+                                navigate('/oferty');
+                            }}>
+                                {t('hero.browse')}
+                                <ArrowRight size={18} strokeWidth={2.5} />
+                            </button>
+                            <button className="btn-secondary" onClick={() => {
+                                trackEvent('hero_cta_click', { cta: 'sell_property' });
+                                navigate('/dodaj-nieruchomosc');
+                            }}>
+                                {t('hero.sell')}
+                            </button>
+                        </div>
+
+                        <div className="home-hero-stats">
+                            {stats.map((stat) => (
+                                <div key={stat.label} className="home-hero-stat">
+                                    <span className="home-hero-stat-value">{stat.value}</span>
+                                    <span className="home-hero-stat-label">{stat.label}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    <h1 className="hero-title">
-                        {t('hero.titleTop')} <br />
-                        <span className="text-gradient">Domiz Homes</span>
-                    </h1>
-
-                    <p className="hero-subtitle">
-                        {t('hero.subtitle')}
-                    </p>
-
-                    <div className="hero-actions">
-                        <button className="btn-primary hero-btn-primary" onClick={() => {
-                            trackEvent('hero_cta_click', { cta: 'browse_offers' });
-                            navigate('/oferty');
-                        }}>
-                            {t('hero.browse')}
-                            <ArrowRight size={20} strokeWidth={2.5} />
-                        </button>
-                        <button className="btn-secondary hero-btn-secondary" onClick={() => {
-                            trackEvent('hero_cta_click', { cta: 'sell_property' });
-                            navigate('/dodaj-nieruchomosc');
-                        }}>
-                            {t('hero.sell')}
-                        </button>
-                    </div>
-
-                    <div className="hero-stats">
-                        <div className="hero-stat">
-                            <span className="hero-stat-value">150+</span>
-                            <span className="hero-stat-label">{t('hero.offers')}</span>
-                        </div>
-                        <div className="hero-stat-divider" />
-                        <div className="hero-stat">
-                            <span className="hero-stat-value">85+</span>
-                            <span className="hero-stat-label">{t('hero.sold')}</span>
-                        </div>
-                        <div className="hero-stat-divider" />
-                        <div className="hero-stat">
-                            <span className="hero-stat-value">3</span>
-                            <span className="hero-stat-label">{t('hero.experience')}</span>
-                        </div>
+                    <div className="home-hero-media">
+                        <figure className="home-hero-media-main">
+                            <img src="/properties/gwiazdy/salon.jpg" alt="" fetchPriority="high" />
+                            <span className="home-hero-media-badge">
+                                <Sparkles size={16} />
+                                {t('hero.mediaBadge')}
+                            </span>
+                        </figure>
+                        <figure className="home-hero-media-side">
+                            <img src="/properties/gwiazdy/kuchnia.jpg" alt="" loading="lazy" />
+                        </figure>
+                        <figure className="home-hero-media-side">
+                            <img src="/properties/gwiazdy/pokoj.jpg" alt="" loading="lazy" />
+                        </figure>
                     </div>
                 </div>
 
-                <div className="hero-search-wrap">
-                    <div className="hero-media-grid" aria-hidden="true">
-                        <div className="hero-media-large">
-                            <img src="/properties/gwiazdy/salon.jpg" alt="" />
-                        </div>
-                        <div className="hero-media-small">
-                            <img src="/properties/gwiazdy/kuchnia.jpg" alt="" />
-                        </div>
-                        <div className="hero-media-small">
-                            <img src="/properties/gwiazdy/pokoj.jpg" alt="" />
+                <form onSubmit={handleSearch} className="home-hero-search">
+                    <div className="home-hero-search-field">
+                        <label htmlFor="hero-search-location">{t('hero.locationLabel')}</label>
+                        <div className="home-hero-search-control">
+                            <MapPin size={18} />
+                            <input
+                                id="hero-search-location"
+                                type="text"
+                                placeholder={t('hero.locationPlaceholder')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
                     </div>
-                    <form onSubmit={handleSearch} className="search-card hero-search-card">
-                        <h3 className="search-card-title">{t('hero.searchTitle')}</h3>
 
-                        <div className="search-input-group">
-                            <label>{t('hero.locationLabel')}</label>
-                            <div className="search-input-wrap">
-                                <Search size={18} className="search-icon" />
-                                <input
-                                    type="text"
-                                    placeholder={t('hero.locationPlaceholder')}
-                                    className="search-input"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
+                    <div className="home-hero-search-field">
+                        <label htmlFor="hero-search-type">{t('hero.type')}</label>
+                        <div className="home-hero-search-control">
+                            <HomeIcon size={18} />
+                            <select
+                                id="hero-search-type"
+                                value={searchType}
+                                onChange={(e) => setSearchType(e.target.value)}
+                            >
+                                {typeOptions.map((o) => (
+                                    <option key={o.value || 'all'} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={16} className="home-hero-search-chevron" />
                         </div>
+                    </div>
 
-                        <div className="search-filters">
-                            <div className="search-filter">
-                                <label>{t('hero.type')}</label>
-                                <select className="search-input" value={searchType} onChange={(e) => setSearchType(e.target.value)}>
-                                    {typeOptions.map((o) => (
-                                        <option key={o.value || 'all'} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="search-filter">
-                                <label>{t('hero.maxPrice')}</label>
-                                <select className="search-input" value={searchMaxPrice} onChange={(e) => setSearchMaxPrice(e.target.value)}>
-                                    {priceOptions.map((o) => (
-                                        <option key={o.value || 'any'} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
-                            </div>
+                    <div className="home-hero-search-field">
+                        <label htmlFor="hero-search-price">{t('hero.maxPrice')}</label>
+                        <div className="home-hero-search-control">
+                            <Wallet size={18} />
+                            <select
+                                id="hero-search-price"
+                                value={searchMaxPrice}
+                                onChange={(e) => setSearchMaxPrice(e.target.value)}
+                            >
+                                {priceOptions.map((o) => (
+                                    <option key={o.value || 'any'} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={16} className="home-hero-search-chevron" />
                         </div>
+                    </div>
 
-                        <button type="submit" className="btn-primary search-submit-btn">
-                            {t('hero.search')}
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div className="hero-scroll-indicator" aria-hidden="true">
-                <ChevronDown size={24} />
+                    <button type="submit" className="btn-primary home-hero-search-submit">
+                        <Search size={18} strokeWidth={2.5} />
+                        {t('hero.search')}
+                    </button>
+                </form>
             </div>
         </section>
     );
