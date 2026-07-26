@@ -1,4 +1,37 @@
-# React + TypeScript + Vite
+# Domiz Homes
+
+Strona biura nieruchomości Domiz Homes (React + TypeScript + Vite, Firebase Hosting + Firestore).
+
+## Uruchomienie lokalne
+
+```bash
+npm install
+npm run dev
+```
+
+## Wdrożenie na produkcję
+
+Produkcja to Firebase Hosting, projekt `domiz-a6a6c` (konfiguracja w `firebase.json` i `.firebaserc`).
+
+**Automatycznie:** każdy push do `main` uruchamia workflow `.github/workflows/deploy.yml`, który buduje
+projekt i publikuje kanał `live`. Wymaga sekretu `FIREBASE_SERVICE_ACCOUNT` w ustawieniach repozytorium
+(Settings → Secrets and variables → Actions) — zawartość pliku JSON konta serwisowego z rolą
+*Firebase Hosting Admin*. Ten sam workflow można też odpalić ręcznie z zakładki Actions.
+
+**Ręcznie z lokalnej maszyny:**
+
+```bash
+npm ci
+npm run build          # build + generate-pages.js (statyczne strony i sitemap)
+npx firebase-tools login
+npx firebase-tools deploy --only hosting
+```
+
+Reguły Firestore i Storage wdraża się osobno: `npx firebase-tools deploy --only firestore,storage`.
+
+---
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
