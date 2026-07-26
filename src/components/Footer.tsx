@@ -12,7 +12,7 @@ export function Footer() {
                     {/* Brand Column */}
                     <div>
                         <Link to="/" className="logo-text" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <Home style={{ color: '#10b981' }} /> Domiz Homes
+                            <Home style={{ color: 'var(--color-primary)' }} /> Domiz Homes
                         </Link>
                         <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
                             {t('footer.desc')}
