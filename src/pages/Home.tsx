@@ -1,165 +1,219 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { PropertyCard } from '../components/PropertyCard';
-import { ArrowRight, Star, Shield, Clock, Loader2, FileCheck, MessageSquare, Quote } from 'lucide-react';
+import { ArrowRight, Star, Shield, Clock, FileCheck, MessageSquare, Check, Building2 } from 'lucide-react';
 import { useProperties } from '../hooks/useProperties';
+import { useRevealOnScroll } from '../hooks/useRevealOnScroll';
 import { useLanguage } from '../context/useLanguage';
+import './Home.css';
+
+function PropertyCardSkeleton() {
+    return (
+        <div className="property-card-skeleton" aria-hidden="true">
+            <div className="skeleton-block skeleton-image" />
+            <div className="skeleton-line skeleton-line-title" />
+            <div className="skeleton-line skeleton-line-short" />
+            <div className="skeleton-stats">
+                <span />
+                <span />
+                <span />
+            </div>
+        </div>
+    );
+}
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((part) => part.charAt(0))
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+}
 
 export function Home() {
     const navigate = useNavigate();
     const { properties, loading } = useProperties();
     const { t } = useLanguage();
-    const featuredProperties = properties.filter(p => p.featured).slice(0, 3);
+    const pageRef = useRef<HTMLDivElement>(null);
+
+    const featuredProperties = properties.filter((p) => p.featured);
+    // Gdy żadna oferta nie jest wyróżniona, pokazujemy zwykłe oferty zamiast pustej sekcji.
+    const showcaseProperties = (featuredProperties.length > 0 ? featuredProperties : properties).slice(0, 3);
+
+    useRevealOnScroll(pageRef, [loading, showcaseProperties.length]);
+
     const features = [
-        {
-            icon: <Star size={26} strokeWidth={2} />,
-            title: t('home.feature1Title'),
-            desc: t('home.feature1Desc'),
-            accent: "rgba(16, 185, 129, 0.15)",
-        },
-        {
-            icon: <Shield size={26} strokeWidth={2} />,
-            title: t('home.feature2Title'),
-            desc: t('home.feature2Desc'),
-            accent: "rgba(5, 150, 105, 0.12)",
-        },
-        {
-            icon: <Clock size={26} strokeWidth={2} />,
-            title: t('home.feature3Title'),
-            desc: t('home.feature3Desc'),
-            accent: "rgba(16, 185, 129, 0.1)",
-        },
+        { icon: <Star size={24} strokeWidth={2} />, title: t('home.feature1Title'), desc: t('home.feature1Desc') },
+        { icon: <Shield size={24} strokeWidth={2} />, title: t('home.feature2Title'), desc: t('home.feature2Desc') },
+        { icon: <Clock size={24} strokeWidth={2} />, title: t('home.feature3Title'), desc: t('home.feature3Desc') },
     ];
 
+    const steps = [
+        { num: '01', icon: <MessageSquare size={22} strokeWidth={2} />, title: t('home.step1Title'), desc: t('home.step1Desc') },
+        { num: '02', icon: <FileCheck size={22} strokeWidth={2} />, title: t('home.step2Title'), desc: t('home.step2Desc') },
+        { num: '03', icon: <Clock size={22} strokeWidth={2} />, title: t('home.step3Title'), desc: t('home.step3Desc') },
+        { num: '04', icon: <Shield size={22} strokeWidth={2} />, title: t('home.step4Title'), desc: t('home.step4Desc') },
+    ];
+
+    const testimonials = [
+        { name: 'Anna K.', text: t('home.testimonial1'), rating: 5 },
+        { name: 'Piotr M.', text: t('home.testimonial2'), rating: 5 },
+        { name: 'Magdalena S.', text: t('home.testimonial3'), rating: 5 },
+    ];
+
+    const trustItems = [t('home.trust1'), t('home.trust2'), t('home.trust3')];
+
     return (
-        <div className="home-page">
+        <div className="home-page" ref={pageRef}>
             <Hero />
 
-            {/* Features - Bento style */}
-            <section className="home-section home-features">
-                <div className="home-section-bg" />
+            {/* Wyróżnione oferty */}
+            <section className="home-section">
                 <div className="container">
-                    <div className="home-section-header">
-                        <span className="section-label">{t('home.whyLabel')}</span>
-                        <h2>{t('home.whyTitlePrefix')} <span className="text-gradient">Domiz Homes</span>?</h2>
-                        <p className="home-section-desc">
-                            {t('home.whyDesc')}
-                        </p>
+                    <div className="home-section-head home-section-head--row" data-reveal>
+                        <div>
+                            <span className="home-eyebrow">{t('home.offerLabel')}</span>
+                            <h2 className="home-section-title">{t('home.featuredProperties')}</h2>
+                            <p className="home-section-desc">{t('home.offerDesc')}</p>
+                        </div>
+                        <button className="home-section-link" onClick={() => navigate('/oferty')}>
+                            {t('home.seeAll')}
+                            <ArrowRight size={18} strokeWidth={2.5} />
+                        </button>
                     </div>
 
-                    <div className="features-bento">
-                        {features.map((f, idx) => (
-                            <div
-                                key={idx}
-                                className="feature-card-bento"
-                                style={{ animationDelay: `${idx * 0.1}s` }}
+                    {loading ? (
+                        <div className="home-offers-skeletons">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <PropertyCardSkeleton key={index} />
+                            ))}
+                        </div>
+                    ) : showcaseProperties.length > 0 ? (
+                        <div className="properties-grid" data-reveal>
+                            {showcaseProperties.map((prop) => (
+                                <PropertyCard key={prop.id} {...prop} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="home-offers-empty" data-reveal>
+                            <span className="home-offers-empty-icon">
+                                <Building2 size={26} strokeWidth={2} />
+                            </span>
+                            <h3>{t('home.offersEmptyTitle')}</h3>
+                            <p>{t('home.offersEmptyDesc')}</p>
+                            <button className="btn-primary" onClick={() => navigate('/oferty')}>
+                                {t('home.seeAll')}
+                                <ArrowRight size={18} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* Dlaczego my */}
+            <section className="home-section home-section--soft">
+                <div className="container">
+                    <div className="home-section-head" data-reveal>
+                        <span className="home-eyebrow">{t('home.whyLabel')}</span>
+                        <h2 className="home-section-title">
+                            {t('home.whyTitlePrefix')} <span className="home-accent">Domiz Homes</span>?
+                        </h2>
+                        <p className="home-section-desc">{t('home.whyDesc')}</p>
+                    </div>
+
+                    <div className="home-features">
+                        {features.map((feature, idx) => (
+                            <article
+                                key={feature.title}
+                                className="home-card"
+                                data-reveal
+                                style={{ transitionDelay: `${idx * 80}ms` }}
                             >
-                                <div
-                                    className="feature-card-icon"
-                                    style={{ background: f.accent }}
-                                >
-                                    <span style={{ color: 'var(--color-primary-dark)' }}>{f.icon}</span>
-                                </div>
-                                <h3>{f.title}</h3>
-                                <p>{f.desc}</p>
-                            </div>
+                                <span className="home-card-icon">{feature.icon}</span>
+                                <h3 className="home-card-title">{feature.title}</h3>
+                                <p className="home-card-desc">{feature.desc}</p>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
             {/* Jak pracujemy */}
-            <section className="home-section home-process">
+            <section className="home-section">
                 <div className="container">
-                    <div className="home-section-header">
-                        <span className="section-label">{t('home.processLabel')}</span>
-                        <h2>{t('home.processTitlePrefix')} <span className="text-gradient">{t('home.processTitleHighlight')}</span>?</h2>
+                    <div className="home-section-head" data-reveal>
+                        <span className="home-eyebrow">{t('home.processLabel')}</span>
+                        <h2 className="home-section-title">
+                            {t('home.processTitlePrefix')} <span className="home-accent">{t('home.processTitleHighlight')}</span>?
+                        </h2>
+                        <p className="home-section-desc">{t('home.processDesc')}</p>
                     </div>
-                    <div className="home-process-steps">
-                        {[
-                            { num: '01', title: t('home.step1Title'), desc: t('home.step1Desc'), icon: <MessageSquare size={22} /> },
-                            { num: '02', title: t('home.step2Title'), desc: t('home.step2Desc'), icon: <FileCheck size={22} /> },
-                            { num: '03', title: t('home.step3Title'), desc: t('home.step3Desc'), icon: <Clock size={22} /> },
-                            { num: '04', title: t('home.step4Title'), desc: t('home.step4Desc'), icon: <Shield size={22} /> },
-                        ].map((step, i) => (
-                            <div key={i} className="home-process-step">
-                                <div className="home-process-step-num">{step.num}</div>
-                                <h4>{step.title}</h4>
-                                <p>{step.desc}</p>
-                            </div>
+
+                    <div className="home-steps">
+                        {steps.map((step, idx) => (
+                            <article
+                                key={step.num}
+                                className="home-card home-step"
+                                data-reveal
+                                style={{ transitionDelay: `${idx * 80}ms` }}
+                            >
+                                <div className="home-step-head">
+                                    <span className="home-card-icon">{step.icon}</span>
+                                    <span className="home-step-num">{step.num}</span>
+                                </div>
+                                <h3 className="home-card-title">{step.title}</h3>
+                                <p className="home-card-desc">{step.desc}</p>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Testimoniale */}
-            <section className="home-section home-testimonials">
-                <div className="home-section-bg" />
+            {/* Opinie */}
+            <section className="home-section home-section--soft">
                 <div className="container">
-                    <div className="home-section-header">
-                        <span className="section-label">{t('home.reviewsLabel')}</span>
-                        <h2>{t('home.reviewsTitle')} <span className="text-gradient">{t('home.reviewsHighlight')}</span> {t('home.reviewsSuffix')}</h2>
+                    <div className="home-section-head" data-reveal>
+                        <span className="home-eyebrow">{t('home.reviewsLabel')}</span>
+                        <h2 className="home-section-title">
+                            {t('home.reviewsTitle')} <span className="home-accent">{t('home.reviewsHighlight')}</span> {t('home.reviewsSuffix')}
+                        </h2>
                     </div>
-                    <div className="home-testimonials-grid">
-                        {[
-                            { name: 'Anna K.', text: t('home.testimonial1'), rating: 5 },
-                            { name: 'Piotr M.', text: t('home.testimonial2'), rating: 5 },
-                            { name: 'Magdalena S.', text: t('home.testimonial3'), rating: 5 },
-                        ].map((t, i) => (
-                            <div key={i} className="home-testimonial-card">
-                                <Quote size={28} className="home-testimonial-quote" />
-                                <p className="home-testimonial-text">"{t.text}"</p>
-                                <div className="home-testimonial-stars">
-                                    {Array.from({ length: t.rating }).map((_, j) => (
-                                        <Star key={j} size={14} fill="#f59e0b" color="#f59e0b" />
+
+                    <div className="home-testimonials">
+                        {testimonials.map((testimonial, idx) => (
+                            <figure
+                                key={testimonial.name}
+                                className="home-card home-testimonial"
+                                data-reveal
+                                style={{ transitionDelay: `${idx * 80}ms` }}
+                            >
+                                <div className="home-testimonial-stars" role="img" aria-label={`${testimonial.rating}/5`}>
+                                    {Array.from({ length: testimonial.rating }).map((_, star) => (
+                                        <Star key={star} size={15} fill="currentColor" strokeWidth={0} />
                                     ))}
                                 </div>
-                                <span className="home-testimonial-name">{t.name}</span>
-                            </div>
+                                <blockquote className="home-testimonial-text">{testimonial.text}</blockquote>
+                                <figcaption className="home-testimonial-author">
+                                    <span className="home-testimonial-avatar" aria-hidden="true">{initials(testimonial.name)}</span>
+                                    <span>
+                                        <span className="home-testimonial-name">{testimonial.name}</span>
+                                        <span className="home-testimonial-role">{t('home.clientLabel')}</span>
+                                    </span>
+                                </figcaption>
+                            </figure>
                         ))}
                     </div>
-                </div>
-            </section>
-
-            {/* Featured Properties */}
-            <section className="home-section home-properties">
-                <div className="container">
-                    <div className="section-header">
-                        <div>
-                            <span className="section-label">{t('home.offerLabel')}</span>
-                            <h2 style={{ marginTop: '0.5rem' }}>{t('home.featuredProperties')}</h2>
-                        </div>
-                        <button
-                            className="home-link-btn"
-                            onClick={() => navigate('/oferty')}
-                        >
-                            {t('home.seeAll')} <ArrowRight size={20} strokeWidth={2} />
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <div className="home-loading">
-                            <Loader2 size={36} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
-                        </div>
-                    ) : (
-                        <div className="properties-grid home-properties-grid">
-                            {featuredProperties.map((prop) => (
-                                <PropertyCard key={prop.id} {...prop} />
-                            ))}
-                        </div>
-                    )}
                 </div>
             </section>
 
             {/* CTA */}
-            <section className="home-section home-cta">
-                <div className="home-cta-bg" />
+            <section className="home-section">
                 <div className="container">
-                    <div className="home-cta-card">
+                    <div className="home-cta-card" data-reveal>
                         <h2 className="home-cta-title">{t('home.ctaTitle')}</h2>
-                        <p className="home-cta-desc">
-                            {t('home.ctaDesc')}
-                        </p>
+                        <p className="home-cta-desc">{t('home.ctaDesc')}</p>
                         <div className="home-cta-actions">
                             <button className="btn-primary" onClick={() => navigate('/osiedle-tluszcz#kontakt')}>
                                 {t('home.contactUs')}
@@ -169,9 +223,12 @@ export function Home() {
                             </button>
                         </div>
                         <div className="home-cta-trust">
-                            <span>✓ {t('home.trust1')}</span>
-                            <span>✓ {t('home.trust2')}</span>
-                            <span>✓ {t('home.trust3')}</span>
+                            {trustItems.map((item) => (
+                                <span key={item} className="home-cta-trust-item">
+                                    <Check size={18} strokeWidth={3} />
+                                    {item}
+                                </span>
+                            ))}
                         </div>
                     </div>
                 </div>
