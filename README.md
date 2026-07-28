@@ -22,10 +22,13 @@ projekt i publikuje kanał `live`. Wymaga sekretu `FIREBASE_SERVICE_ACCOUNT` w u
 
 ```bash
 npm ci
-npm run build          # build + generate-pages.js (statyczne strony i sitemap)
-npx firebase-tools login
-npx firebase-tools deploy --only hosting
+npx firebase-tools login   # jednorazowo
+npm run deploy             # build + generate-pages.js + deploy na kanał live
 ```
+
+`npm run deploy` uwierzytelnia się pierwszym dostępnym sposobem: zmienną `FIREBASE_SERVICE_ACCOUNT`
+(zawartość JSON konta serwisowego), zmienną `FIREBASE_TOKEN` (`firebase login:ci`) albo zalogowanym
+kontem CLI. Dzięki temu tej samej komendy używa się lokalnie i w środowiskach bez przeglądarki.
 
 Reguły Firestore i Storage wdraża się osobno: `npx firebase-tools deploy --only firestore,storage`.
 
