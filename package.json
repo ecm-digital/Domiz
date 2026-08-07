@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "postbuild": "node scripts/generate-pages.js",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:preview": "bash scripts/deploy.sh --preview"
   },
   "dependencies": {
     "@types/matter-js": "^0.20.2",
