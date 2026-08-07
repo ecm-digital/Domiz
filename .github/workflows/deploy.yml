@@ -1,0 +1,49 @@
+name: Deploy to Firebase Hosting
+
+# Push do main publikuje kanał podglądowy (nie rusza produkcji).
+# Produkcję publikuje się świadomie: Actions -> Run workflow -> target: live.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Gdzie opublikować
+        type: choice
+        options: [preview, live]
+        default: preview
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting-${{ inputs.target || 'preview' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Build uruchamia też postbuild (generate-pages.js), który pobiera oferty
+      # z Firestore i generuje statyczne strony oraz sitemap.
+      - run: npm run build
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          # Pierwsza nazwa powstaje automatycznie przy `firebase init hosting:github`,
+          # druga to sekret założony ręcznie.
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOMIZ_A6A6C || secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: domiz-a6a6c
+          channelId: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'live') && 'live' || 'main-preview' }}
+          expires: 7d
