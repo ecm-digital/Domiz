@@ -45,7 +45,20 @@ exports.app = functions.https.onRequest(async (req, res) => {
                 if (docSnap.exists) {
                     const property = docSnap.data();
                     const title = `${property.title} | Domiz Homes`;
-                    const description = property.description ? property.description.substring(0, 150) + "..." : "Zobacz szczegóły oferty.";
+                    const title = String(property.title || "").trim().replace(/[.]+$/, "");
+                    const pricePart = typeof property.price === "number"
+                        ? (property.status === "wynajem"
+                            ? `Cena ${property.price.toLocaleString("pl-PL")} zł/mies.`
+                            : `Cena ${property.price.toLocaleString("pl-PL")} zł.`)
+                        : null;
+                    let description = [title ? `${title}.` : null, pricePart, "Sprawdź opis, galerię i umów prezentację nieruchomości."]
+                        .filter(Boolean)
+                        .join(" ")
+                        .replace(/\s+/g, " ")
+                        .trim();
+                    if (description.length > 160) {
+                        description = description.slice(0, 157).trimEnd() + "...";
+                    }
                     const image = property.image || "https://domiz-a6a6c.web.app/og-image.png";
 
                     // Wczytaj szablon HTML (powinien być w folderze funkcji po buildzie)

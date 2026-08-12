@@ -22,10 +22,10 @@ export const defaultSeo: SeoConfig = {
 export const routeSeo: Record<string, SeoConfig> = {
     '/': defaultSeo,
     '/oferty': {
-        title: 'Oferty nieruchomości - domy, mieszkania i działki | Domiz Homes',
-        description: 'Aktualne oferty Domiz Homes: domy, mieszkania i działki na sprzedaż lub wynajem w Tłuszczu, Wołominie i okolicach Warszawy.',
+        title: 'Oferty nieruchomości Śląsk, Mazowsze i Dubaj | Domiz Homes',
+        description: 'Przeglądaj domy i mieszkania na Śląsku, Mazowszu oraz wybrane inwestycje w Dubaju. Aktualne ceny, galerie i szczegółowe opisy.',
         path: '/oferty',
-        keywords: 'oferty nieruchomości, domy na sprzedaż, mieszkania na sprzedaż, działki na sprzedaż, nieruchomości Tłuszcz, nieruchomości Wołomin',
+        keywords: 'oferty nieruchomości Śląsk, nieruchomości Mazowsze, nieruchomości Dubaj, mieszkania Katowice, domy na sprzedaż, nieruchomości Tłuszcz, inwestycje Dubaj',
     },
     '/kalkulatory': {
         title: 'Kalkulatory kredytu i kosztów budowy domu | Domiz Homes',
