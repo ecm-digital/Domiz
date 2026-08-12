@@ -19,9 +19,9 @@ const STATIC_PAGES = [
     },
     {
         path: '/oferty',
-        title: 'Oferty nieruchomości - domy, mieszkania i działki | Domiz Homes',
-        description: 'Aktualne oferty Domiz Homes: domy, mieszkania i działki na sprzedaż lub wynajem w Tłuszczu, Wołominie i okolicach Warszawy.',
-        keywords: 'oferty nieruchomości, domy na sprzedaż, mieszkania na sprzedaż, działki na sprzedaż, nieruchomości Tłuszcz, nieruchomości Wołomin',
+        title: 'Oferty nieruchomości Śląsk, Mazowsze i Dubaj | Domiz Homes',
+        description: 'Przeglądaj domy i mieszkania na Śląsku, Mazowszu oraz wybrane inwestycje w Dubaju. Aktualne ceny, galerie i szczegółowe opisy.',
+        keywords: 'oferty nieruchomości Śląsk, nieruchomości Mazowsze, nieruchomości Dubaj, mieszkania Katowice, domy na sprzedaż, nieruchomości Tłuszcz, inwestycje Dubaj',
         image: DEFAULT_IMAGE,
         priority: '0.9',
     },
@@ -72,6 +72,26 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+}
+
+function buildPropertyMetaDescription(property) {
+    const title = String(property.title || '').trim().replace(/[.]+$/, '');
+    const parts = title ? [`${title}.`] : [];
+
+    if (typeof property.price === 'number' && Number.isFinite(property.price)) {
+        const formatted = property.price.toLocaleString('pl-PL');
+        parts.push(
+            property.status === 'wynajem'
+                ? `Cena ${formatted} zł/mies.`
+                : `Cena ${formatted} zł.`
+        );
+    }
+
+    parts.push('Sprawdź opis, galerię i umów prezentację nieruchomości.');
+
+    const text = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    if (text.length <= 160) return text;
+    return `${text.slice(0, 157).trimEnd()}...`;
 }
 
 function applyMeta(template, { title, description, image, url, keywords, noindex }) {
@@ -313,9 +333,7 @@ async function generatePages() {
         }
 
         const title = `${property.title} | Domiz Homes`;
-        const description = property.description
-            ? `${property.description.substring(0, 157)}...`
-            : `Domiz Homes - Oferta ${property.title}`;
+        const description = buildPropertyMetaDescription(property);
         const image = property.image || `${BASE_URL}/og-image.png`;
         const url = `${BASE_URL}/oferty/${urlSlug}`;
 

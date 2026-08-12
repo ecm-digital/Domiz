@@ -9,6 +9,7 @@ import { MortgageCalculator } from '../components/MortgageCalculator';
 import { trackEvent } from '../utils/analytics';
 import { useLanguage } from '../context/useLanguage';
 import { setSeo } from '../utils/seo';
+import { buildPropertyMetaDescription, buildPropertySeoKeywords } from '../utils/offerSeo';
 
 export function PropertyDetails() {
     const { id } = useParams();
@@ -61,16 +62,13 @@ export function PropertyDetails() {
     useEffect(() => {
         if (property) {
             const path = window.location.pathname;
-            const description = property.description
-                ? `${property.description.replace(/\s+/g, ' ').trim().substring(0, 157)}...`
-                : `Oferta nieruchomości ${property.title} w Domiz Homes.`;
 
             setSeo({
                 title: `${property.title} | Domiz Homes`,
-                description,
+                description: buildPropertyMetaDescription(property),
                 path,
                 image: property.image,
-                keywords: `${property.title}, ${property.location}, nieruchomość na sprzedaż, Domiz Homes`,
+                keywords: buildPropertySeoKeywords(property),
             });
         } else {
             setSeo({
