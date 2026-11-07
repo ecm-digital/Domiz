@@ -88,11 +88,11 @@ test('raty Metro Zachód schodzą się z ceną po 20.11 i nie mają dnia miesią
 });
 
 test('filtr budżetu, pokoi i statusu', () => {
-  const wLimicie = filterUnits({ ...base, tor: 'dla_mnie', rynek: 'pierwotny', budzet: 'tak' }).map((u) => u.id);
+  const wLimicie = filterUnits({ ...base, miasto: 'Warszawa', tor: 'dla_mnie', rynek: 'pierwotny', budzet: 'tak' }).map((u) => u.id);
   assert.deepEqual(wLimicie, ['NB-G101', 'SV-C16', 'BV-C2F44', 'BV-C2D04', 'BV-C5D95']);
   assert.ok(filterUnits({ ...base, budzet: 'tak' }).every((u) => u.suma != null && u.suma <= BUDGET));
   assert.ok(filterUnits({ ...base, budzet: 'brak' }).every((u) => u.suma == null));
-  const dwa = filterUnits({ ...base, pokoje: '2' }).map((u) => u.id);
+  const dwa = filterUnits({ ...base, miasto: 'Warszawa', pokoje: '2' }).map((u) => u.id);
   assert.deepEqual(dwa.sort(), ['MOI-C2M7', 'NB-G103', 'WT-ID4Dvkv']);
   const rez = filterUnits({ ...base, status: 'REZERWACJA_WSTEPNA' });
   assert.equal(rez.length, 2);
@@ -143,17 +143,68 @@ test('wtórna Warszawa: puste parkingi nie wchodzą do limitu, 659 tys. jest pon
   assert.equal(budzetKlasa(byId('WT-ID4DA8t')), 'weryfikacja');
   assert.equal(budzetKlasa(byId('WT-ID4yN2E')), 'weryfikacja');
   assert.match(byId('WT-ID4DGHP').ogrodStatus, /łącznie/);
-  assert.match(byId('WT-ID4DGHP').uzasadnienie, /nie wiąże/);
-  const wtornyLimit = filterUnits({ ...base, rynek: 'wtórny', budzet: 'tak' }).map((u) => u.id);
+  assert.match(byId('WT-ID4DGHP').uzasadnienie, /skleić z ID4DGHP/);
+  const wtornyLimit = filterUnits({ ...base, miasto: 'Warszawa', rynek: 'wtórny', budzet: 'tak' }).map((u) => u.id);
   assert.deepEqual(wtornyLimit, ['WT-ID4DLdc', 'WT-ID4DKcM', 'WT-ID4DANN']);
-  assert.ok(filterUnits({ ...base, rynek: 'pierwotny' }).every((u) => u.rynek === 'pierwotny'));
-  assert.equal(filterUnits({ ...base, rynek: 'wtórny', status: 'OGLOSZENIE' }).length, 15);
+  assert.ok(filterUnits({ ...base, miasto: 'Warszawa', rynek: 'pierwotny' }).every((u) => u.rynek === 'pierwotny' && !String(u.id).startsWith('KT-')));
+  assert.equal(filterUnits({ ...base, miasto: 'Warszawa', rynek: 'wtórny', status: 'OGLOSZENIE' }).length, 15);
+  assert.match(byId('WT-ID4DGHP').uzasadnienie, /nie zakładam, że miejsce da się dokupić/);
+  assert.doesNotMatch(byId('WT-ID4DGHP').uzasadnienie, /Kamil/);
   const page = html({ ...base, rynek: 'wtórny', tor: 'dla_mnie' }, '<div class="settabs"></div>');
   assert.match(page, /noopener noreferrer nofollow/);
   assert.match(page, /https:\/\/www\.otodom\.pl\/pl\/oferta\/ID4Dpi4/);
   assert.match(page, /659/);
   assert.doesNotMatch(page, /Kamila|@|PESEL|BIK/);
   assert.equal(byId('WT-ID4DGHP').miasto, 'Warszawa');
+});
+
+test('Katowice: miasto, cennik garażu i puste MP', () => {
+  const b4 = byId('KT-CP-B4B04');
+  assert.equal(b4.miasto, 'Katowice');
+  assert.equal(b4.suma, 491765.77);
+  assert.equal(budzetKlasa(b4), 'tak');
+  assert.match(b4.mpTekst, /nie jest dowód/);
+  assert.match(b4.odbiórTekst, /nie pozwolenie/);
+  assert.equal(byId('KT-CP-B6A07').suma, 405352.32);
+  assert.equal(byId('KT-CP-B6A06').suma, 497738.62);
+  const b5 = byId('KT-CP-B5A12');
+  assert.equal(b5.cena, 548012.02);
+  assert.equal(b5.suma, 586011.82);
+  assert.equal(budzetKlasa(b5), 'cena');
+  assert.match(b5.cenaStatus, /526 002,02/);
+  const inspire = byId('KT-WT-ID4Aufs');
+  assert.equal(inspire.suma, 560000);
+  assert.match(inspire.sumaStatus, /12 000/);
+  assert.match(inspire.odbiórTekst, /Cesja nie byłaby/);
+  const ligocka = byId('KT-PI-ID4CYTg');
+  assert.equal(ligocka.ogrod, 60.8);
+  assert.equal(ligocka.taras, 6.3);
+  assert.equal(ligocka.suma, null);
+  assert.equal(budzetKlasa(ligocka), 'brak');
+  const francuska = byId('KT-WT-ID4CNI6');
+  assert.equal(francuska.ogrod, null);
+  assert.equal(francuska.ogrodBucket, 'laczny');
+  assert.equal(francuska.suma, 655000);
+  assert.equal(budzetKlasa(francuska), 'nie');
+  const noho = byId('KT-WT-ID4xTAt');
+  assert.equal(noho.suma, 657700);
+  assert.equal(budzetKlasa(noho), 'nie');
+  assert.match(noho.zrodlo, /Faktura VAT/);
+  const bezMp = ['KT-WT-ID4BO1Z', 'KT-PI-ID4CYTg', 'KT-WT-ID4BGWE', 'KT-WT-ID4Clsa', 'KT-PI-ID4CAEh'];
+  for (const id of bezMp) {
+    assert.equal(byId(id).suma, null, id);
+    assert.notEqual(budzetKlasa(byId(id)), 'tak', id);
+  }
+  const katLimit = filterUnits({ ...base, miasto: 'Katowice', budzet: 'tak' }).map((u) => u.id);
+  assert.deepEqual(katLimit.sort(), ['KT-CP-B4B04', 'KT-CP-B6A06', 'KT-CP-B6A07', 'KT-WT-ID4Aufs']);
+  assert.ok(filterUnits({ ...base, miasto: 'Warszawa' }).every((u) => !String(u.id).startsWith('KT-')));
+  assert.equal(filterUnits({ ...base, miasto: 'Katowice', rynek: 'pierwotny' }).length, 6);
+  assert.equal(filterUnits({ ...base, miasto: 'Katowice', rynek: 'wtórny' }).length, 6);
+  const page = html({ ...base, miasto: 'Katowice', tor: 'dla_mnie' }, '<div class="settabs"></div>');
+  assert.match(page, /Ceglana Park/);
+  assert.match(page, /noopener noreferrer nofollow/);
+  assert.doesNotMatch(page, /600 355/);
+  assert.match(html({ ...base, miasto: 'Warszawa' }, '<div></div>'), /600 355/);
 });
 
 test('historyczne oferty z 3.11 zostają w data.js', () => {

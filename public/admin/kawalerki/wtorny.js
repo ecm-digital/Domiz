@@ -120,8 +120,8 @@ export const WTORNY_UNITS = [
     historiaId: 13,
     odbiórTekst: 'rok 2025, stan deweloperski. Wykończenie poza limitem, kwota nieznana. To samo ogłoszenie co historyczne id 13 z 3.11.',
     url: 'https://www.otodom.pl/pl/oferta/ID4DGHP',
-    uzasadnienie: 'Bemowo i duża powierzchnia przy domu, ale 36,64 m² nie jest samym ogrodem, a bez ceny garażu nie wiadomo, czy mieści się w 650 tys. Wcześniejsza rozmowa w Domiz sugerowała brak własnego garażu i ewentualne miejsce od sąsiada — ten wyciąg nie wiąże jej jednoznacznie z ID4DGHP, więc kwoty z tej rozmowy tu nie ma.',
-    ryzyka: 'Pytanie: czy to ten sam lokal co w rozmowie i czy miejsce w ogóle jest do kupienia. Ładowanie niepotwierdzone.',
+    uzasadnienie: 'Bemowo i duża powierzchnia przy domu, ale 36,64 m² nie jest samym ogrodem, a bez ceny garażu nie wiadomo, czy mieści się w 650 tys. Dopisek z 7.11: wcześniejsza wiadomość sprzedającego z 31.10 mówi, że sam nie ma miejsca w garażu i że sąsiad może sprzedać albo wynająć. Tego wyciągu nadal nie da się jednoznacznie skleić z ID4DGHP, więc kwoty z wiadomości tu nie ma i nie zakładam, że miejsce da się dokupić razem z lokalem.',
+    ryzyka: 'Nie zakładać zakupu garażu z lokalem. Pytanie: czy to ten sam lokal co w wiadomości z 31.10. Ładowanie niepotwierdzone.',
   }),
   base({
     id: 'WT-ID4DSsk',

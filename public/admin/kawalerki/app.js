@@ -24,7 +24,7 @@ let WT = {}; // Top wtórny (odsprzedaże)
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '4.' };
 const badge = (t, big) => t.rank > 3 ? `<span class="badge off">Poza podium</span>` : `<span class="badge ${t.medal}${big ? ' big' : ''}">🏆 TOP ${t.rank}</span>`;
 const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'z' };
-const zState = { tor: 'dla_mnie', rynek: '', miasto: '', dev: '', dzielnica: '', inwestycja: '', pokoje: '', status: '', ogrod: '', budzet: '', sort: 'kolejnosc', dir: 1, q: '' };
+const zState = { tor: 'dla_mnie', rynek: '', miasto: 'Warszawa', dev: '', dzielnica: '', inwestycja: '', pokoje: '', status: '', ogrod: '', budzet: '', sort: 'kolejnosc', dir: 1, q: '' };
 let ZView = null;
 // Zestaw danych: 'k' = kawalerki (UNITS…), '2' = 2 pokoje z ogródkiem (SET2).
 const S = () => (ui.set === '2' && D.SET2) ? D.SET2 : D;

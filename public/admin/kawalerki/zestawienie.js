@@ -4,6 +4,7 @@
 // Cennik Nordic odczytany z PDF (pozycje pomieszczeń przynależnych, data 26.06.2026).
 // Miasto jest polem rekordu (teraz Warszawa). Katowic nie dopisujemy, dopóki nie ma własnej paczki.
 import { WTORNY_UNITS } from './wtorny.js';
+import { KATOWICE_UNITS } from './katowice.js';
 
 export const UPDATED = '6.11.2026';
 export const BUDGET = 650000;
@@ -767,7 +768,7 @@ const PRIMARY_UNITS = [
   },
 ];
 
-export const UNITS = [...PRIMARY_UNITS, ...WTORNY_UNITS];
+export const UNITS = [...PRIMARY_UNITS, ...WTORNY_UNITS, ...KATOWICE_UNITS];
 
 export const WNIOSKI = [
   'G 1.01 zostaje punktem odniesienia na spotkanie 7.11.2026 o 12:00 przy Lazurowej 127. Przy pełnej cennikowej pozycji garażu z gniazdem (49 000 zł, nie dopłata) suma to 600 355 zł i mieści się w 650 tys. Przydział miejsca i ładowanie nadal są niepotwierdzone, a ogródek 5,56 m² nie wynika z załączonych JPG.',
@@ -803,6 +804,7 @@ export const DATY = [
   { kiedy: '6.11.2026', co: 'Paczka ofert, odczyt PDF YIT, statusy YIT/Develia w researchu.' },
   { kiedy: '7.11.2026, 12:00', co: 'Spotkanie YIT, Lazurowa 127, lokale G 1.01 i G 1.03.' },
   { kiedy: '7.11.2026 ok. 01:50', co: 'Odczyt ogłoszeń wtórnych z Warszawy (Otodom). Sprzedający nie potwierdził. Osobno od spotkania YIT.' },
+  { kiedy: '7.11.2026 ok. 02:00', co: 'Odczyt Katowic: karty Ceglana Park i ogłoszenia Otodom. Osobne miasto, nie miesza się z rankingiem Warszawy.' },
   { kiedy: '20.11.2026', co: 'Deklarowana obniżka cen Metro Zachód o ok. 5%. Niepotwierdzona 6.11.' },
   { kiedy: '29.11.2026', co: 'Deklarowany rabat 10% na wykończenie PROFIT. Poza limitem 650 tys.' },
   { kiedy: 'ok. 2.12.2026', co: 'Koniec ok. 30-dniowej ważności kalkulacji wykończenia z 2.11.' },
@@ -816,6 +818,7 @@ export function miastoOf(u) {
 export function budzetKlasa(u) {
   if (u.tor === 'odrzut' || u.dostepnosc === 'poza_kryterium') return 'odrzut';
   if (u.dostepnosc === 'REZERWACJA' || u.dostepnosc === 'REZERWACJA_WSTEPNA') return 'rezerwacja';
+  if (u.cenaDoPotwierdzenia) return 'cena';
   if (u.nieTrafienie) return u.suma != null && u.suma > BUDGET ? 'nie' : 'weryfikacja';
   if (u.suma == null) {
     if (u.ponadSamymLokalem) return 'nie';
@@ -833,7 +836,8 @@ export function statusLabel(code) {
     REZERWACJA: 'Rezerwacja — nie wolne',
     NIEZNANA: 'Dostępność nieznana — nie sprzedane',
     poza_kryterium: 'Poza kryterium kawalerek',
-    OGLOSZENIE: 'Ogłoszenie aktywne 7.11.2026 ok. 01:50, sprzedający nie potwierdził',
+    OGLOSZENIE: 'Ogłoszenie aktywne, sprzedający nie potwierdził',
+    KARTA: 'Wolne na karcie dewelopera — nie jest to weryfikacja sprzedawcy',
   }[code] || code;
 }
 
