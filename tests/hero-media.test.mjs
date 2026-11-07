@@ -67,9 +67,10 @@ test("mobile, reduced motion i save-data zostają przy statycznym kadrze", () =>
 test("opublikowana konfiguracja nie zawiera filmu", () => {
     const config = readFileSync(new URL("../public/hero/hero-media.js", import.meta.url), "utf8");
     assert.match(config, /window\.__DOMIZ_HERO_MEDIA/);
-    assert.doesNotMatch(config, /\.mp4|serhant|heygen/i);
-    assert.equal((config.match(/video: ""/g) || []).length, 3);
-    assert.equal((config.match(/poster: ""/g) || []).length, 3);
+    assert.match(config, /\/hero\/domiz-hero-silent\.mp4/);
+    assert.match(config, /\/hero\/domiz-hero-poster\.jpg/);
+    assert.doesNotMatch(config, /serhant/i);
+    assert.equal((config.match(/video: ""/g) || []).length, 2);
 });
 
 test("łata hero dokłada pauzę i statyczny H1, bez podmiany ofert", () => {
@@ -87,12 +88,14 @@ test("łata hero dokłada pauzę i statyczny H1, bez podmiany ofert", () => {
     assert.match(js, /prefers-reduced-motion/);
     assert.match(js, /saveData/);
     assert.match(js, /playsInline:!0/);
-    assert.match(js, /preload:"none"/);
+    assert.match(js, /preload:"metadata"/);
     assert.match(js, /ee===_&&!!Y\.video&&allowVideo/);
     assert.match(js, /Wstrzymaj pokaz/);
+    assert.match(js, /Materiał wizerunkowy/);
+    assert.match(js, /domiz-hero-silent\.mp4/);
     assert.match(js, /ArrowRight/);
-    assert.match(js, /NB-G101|__DOMIZ_PREVIEW_PROPS/);
-    assert.doesNotMatch(js, /\.mp4|serhant/i);
+    assert.match(js, /__DOMIZ_PREVIEW_PROPS/);
+    assert.doesNotMatch(js, /serhant|&e\.jsx/i);
     assert.match(html, /<h1>Nieruchomości na Śląsku, Mazowszu i w Dubaju Domiz Homes<\/h1>/);
     assert.match(html, /href="\/oferty"/);
     assert.match(html, /href="\/dodaj-nieruchomosc"/);

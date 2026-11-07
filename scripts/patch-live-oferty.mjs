@@ -7,7 +7,7 @@ function once(source, from, to, label) {
     if (count !== 1) {
         throw new Error(`${label}: oczekiwano 1 wystąpienia, jest ${count}`);
     }
-    return source.replace(from, to);
+    return source.replace(from, () => to);
 }
 
 export function patchLiveOffers({ liveDir, outDir }) {
@@ -149,7 +149,7 @@ export function patchLiveOffers({ liveDir, outDir }) {
     details = once(
         details,
         'e.jsxs("div",{className:"mobile-sticky-cta",children:[$&&e.jsxs("a",{href:`tel:${$}`,className:"cta-button primary",onClick:()=>{b("lead_contact_click",{type:"phone",source:"property_details_mobile_sticky",property_id:t.id})},children:[e.jsx(G,{size:18})," Zadzwoń"]}),e.jsxs("button",{className:"cta-button secondary",onClick:()=>{b("lead_contact_click",{type:"form",source:"property_details_mobile_sticky",property_id:t.id}),x("/osiedle-tluszcz#kontakt")},children:[e.jsx(K,{size:18})," Formularz kontaktowy"]})]})',
-        'e.jsxs("div",{className:"mobile-sticky-cta",children:[t.review?e.jsx("a",{href:t.review.sourceUrl,target:"_blank",rel:"noopener noreferrer nofollow",className:"cta-button primary",style:{textDecoration:"none"},children:p==="en"?"Open source":"Otwórz źródło"}):e.jsxs("button",{className:"cta-button secondary",onClick:()=>{b("lead_contact_click",{type:"form",source:"property_details_mobile_sticky",property_id:t.id}),x("/osiedle-tluszcz#kontakt")},children:[e.jsx(K,{size:18})," Formularz kontaktowy"]}),!t.review&&$&&e.jsxs("a",{href:`tel:${$}`,className:"cta-button primary",onClick:()=>{b("lead_contact_click",{type:"phone",source:"property_details_mobile_sticky",property_id:t.id})},children:[e.jsx(G,{size:18})," Zadzwoń"]})]})',
+        'e.jsxs("div",{className:"mobile-sticky-cta",children:t.review?[e.jsx("a",{href:t.review.sourceUrl,target:"_blank",rel:"noopener noreferrer nofollow",className:"cta-button primary",style:{textDecoration:"none"},children:p==="en"?"Open source":"Otwórz źródło"})]:[$&&e.jsxs("a",{href:`tel:${$}`,className:"cta-button primary",onClick:()=>{b("lead_contact_click",{type:"phone",source:"property_details_mobile_sticky",property_id:t.id})},children:[e.jsx(G,{size:18})," Zadzwoń"]}),e.jsxs("button",{className:"cta-button secondary",onClick:()=>{b("lead_contact_click",{type:"form",source:"property_details_mobile_sticky",property_id:t.id}),x("/osiedle-tluszcz#kontakt")},children:[e.jsx(K,{size:18})," Formularz kontaktowy"]})]})',
         'pasek mobilny',
     );
     details = once(
@@ -158,6 +158,9 @@ export function patchLiveOffers({ liveDir, outDir }) {
         't.baths!=null&&e.jsxs("div",{style:{textAlign:"center",borderLeft:"1px solid #e5e7eb"},children:[e.jsx(Be,{size:28,color:"#10b981",style:{margin:"0 auto 0.5rem"}}),e.jsx("div",{style:{fontSize:"0.875rem",color:"#6b7280"},children:r("property.bathrooms")}),e.jsx("div",{style:{fontSize:"1.25rem",fontWeight:"bold"},children:t.baths})]})',
         'łazienki szczegółów',
     );
+    if (/[^&]&e\.jsx/.test(details)) {
+        throw new Error('pasek mobilny ma bitowe & między elementami Reacta');
+    }
 
     mkdirSync(resolve(outDir, 'assets'), { recursive: true });
     mkdirSync(resolve(outDir, 'kawalerki-z-ogrodkiem'), { recursive: true });

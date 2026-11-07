@@ -4,10 +4,10 @@ import { dirname, resolve } from "node:path";
 function once(source, from, to, label) {
     const count = source.split(from).length - 1;
     if (count !== 1) throw new Error(`${label}: oczekiwano 1 wystąpienia, jest ${count}`);
-    return source.replace(from, to);
+    return source.replace(from, () => to);
 }
 
-const SLIDES = `const ga=[{image:"/properties/gwiazdy/balkon-zachod.webp",title:{pl:"Apartament na Gwiazdach w Katowicach",en:"Apartment at Gwiazdy Estate in Katowice"},desc:{pl:"Apartament z panoramicznym widokiem na Osiedlu Gwiazdy w Katowicach.",en:"An apartment with panoramic views at the Gwiazdy Estate in Katowice."},video:"",poster:""},{image:"/properties/carousel/suburban_house.png",title:{pl:"Dom pod Warszawą",en:"Home near Warsaw"},desc:{pl:"Nowoczesny dom z ogrodem pod Warszawą.",en:"A modern home with a garden near Warsaw."},video:"",poster:""},{image:"/properties/carousel/dubai-apartment.png",title:{pl:"Apartament inwestycyjny w Dubaju",en:"Investment apartment in Dubai"},desc:{pl:"Apartament premium z widokiem na panoramę Dubaju.",en:"A premium apartment overlooking the Dubai skyline."},video:"",poster:""}].map((slide,index)=>{const extra=(window.__DOMIZ_HERO_MEDIA||[])[index]||{};return{...slide,video:String(extra.video||"").trim(),poster:String(extra.poster||"").trim()}}),Zp=5e3;`;
+const SLIDES = `const ga=[{image:"/properties/gwiazdy/balkon-zachod.webp",title:{pl:"Apartament na Gwiazdach w Katowicach",en:"Apartment at Gwiazdy Estate in Katowice"},desc:{pl:"Apartament z panoramicznym widokiem na Osiedlu Gwiazdy w Katowicach.",en:"An apartment with panoramic views at the Gwiazdy Estate in Katowice."},video:"/hero/domiz-hero-silent.mp4",poster:"/hero/domiz-hero-poster.jpg"},{image:"/properties/carousel/suburban_house.png",title:{pl:"Dom pod Warszawą",en:"Home near Warsaw"},desc:{pl:"Nowoczesny dom z ogrodem pod Warszawą.",en:"A modern home with a garden near Warsaw."},video:"",poster:""},{image:"/properties/carousel/dubai-apartment.png",title:{pl:"Apartament inwestycyjny w Dubaju",en:"Investment apartment in Dubai"},desc:{pl:"Apartament premium z widokiem na panoramę Dubaju.",en:"A premium apartment overlooking the Dubai skyline."},video:"",poster:""}].map((slide,index)=>{const extra=(window.__DOMIZ_HERO_MEDIA||[])[index]||{};return{...slide,video:String(extra.video?extra.video:(slide.video||"")).trim(),poster:String(extra.poster?extra.poster:(slide.poster||"")).trim()}}),Zp=5e3;`;
 
 const STATIC_HERO = `
   <section class="hero-static-fallback">
@@ -57,14 +57,20 @@ export function patchLiveHero({ bundlePath, htmlPath, outDir }) {
     js = once(
         js,
         'B.useEffect(()=>{if(O||!pe)return;const Y=window.setTimeout(()=>{E(ee=>(ee+1)%ga.length)},Zp);return()=>window.clearTimeout(Y)},[_,pe,O]);',
-        'B.useEffect(()=>{if(O||!pe||heroPaused||!allowAdvance)return;const Y=window.setTimeout(()=>{E(ee=>(ee+1)%ga.length)},Zp);return()=>window.clearTimeout(Y)},[_,pe,O,heroPaused,allowAdvance]);B.useEffect(()=>{const node=document.querySelector(".hero-slide.active video");if(!node)return;if(heroPaused||!allowVideo)node.pause();else node.play?.().catch(()=>{})},[heroPaused,_,allowVideo]);',
+        'B.useEffect(()=>{if(O||!pe||heroPaused||!allowAdvance)return;const wait=ga[_]&&ga[_].video&&allowVideo?15000:Zp;const Y=window.setTimeout(()=>{E(ee=>(ee+1)%ga.length)},wait);return()=>window.clearTimeout(Y)},[_,pe,O,heroPaused,allowAdvance,allowVideo]);B.useEffect(()=>{const node=document.querySelector(".hero-slide.active video");if(!node)return;if(heroPaused||!allowVideo)node.pause();else node.play?.().catch(()=>{})},[heroPaused,_,allowVideo]);',
         "autoplay i pauza",
     );
     js = once(
         js,
         'ga.map((Y,ee)=>c.jsx("div",{className:`hero-slide ${ee===_?"active":""}`,"aria-hidden":ee!==_,children:c.jsx("img",{className:"hero-slide-image",src:Y.image,alt:"",decoding:"async",fetchPriority:ee===0?"high":"low"})},ee))',
-        'ga.map((Y,ee)=>{const play=ee===_&&!!Y.video&&allowVideo;return c.jsx("div",{className:`hero-slide ${ee===_?"active":""}`,"aria-hidden":ee!==_,children:play?c.jsx("video",{className:"hero-slide-image hero-slide-video",src:Y.video,poster:Y.poster||Y.image,muted:!0,autoPlay:!heroPaused,loop:!0,playsInline:!0,preload:"none","aria-hidden":!0}):c.jsx("img",{className:"hero-slide-image",src:Y.video&&Y.poster&&ee===_&&!allowVideo?Y.poster:Y.image,alt:"",decoding:"async",fetchPriority:ee===0?"high":"low"})},ee)})',
+        'ga.map((Y,ee)=>{const play=ee===_&&!!Y.video&&allowVideo;return c.jsx("div",{className:`hero-slide ${ee===_?"active":""}`,"aria-hidden":ee!==_,children:play?c.jsx("video",{className:"hero-slide-image hero-slide-video",src:Y.video,poster:Y.poster||Y.image,muted:!0,autoPlay:!heroPaused,loop:!0,playsInline:!0,preload:"metadata","aria-hidden":!0}):c.jsx("img",{className:"hero-slide-image",src:Y.video&&Y.poster&&ee===_&&!allowVideo?Y.poster:Y.image,alt:"",decoding:"async",fetchPriority:ee===0?"high":"low"})},ee)})',
         "aktywny slajd",
+    );
+    js = once(
+        js,
+        'c.jsx("div",{className:"hero-slide-overlay"})',
+        'c.jsx("div",{className:"hero-slide-overlay"}),ga[_].video?c.jsx("p",{style:{position:"absolute",left:"1.25rem",bottom:"1.25rem",zIndex:2,margin:0,padding:"0.35rem 0.7rem",borderRadius:"999px",background:"rgba(15,23,42,0.72)",color:"#fff",fontSize:"0.78rem"},children:z==="en"?"Brand image":"Materiał wizerunkowy"}):null',
+        "oznaczenie materiału",
     );
     js = once(
         js,
@@ -84,8 +90,11 @@ export function patchLiveHero({ bundlePath, htmlPath, outDir }) {
         'c.jsx("button",{type:"button",onClick:Ce,className:"carousel-control-btn","aria-label":z==="en"?"Next slide":"Następny slajd",children:c.jsx(Iy,{size:20})})',
         "następny slajd",
     );
-    if (js.includes("serhant.com") || js.includes(".mp4")) {
-        throw new Error("mechanizm nie może zawierać filmu ani adresu SERHANT");
+    if (js.includes("serhant.com") || /serhant/i.test(js)) {
+        throw new Error("mechanizm nie może zawierać adresu SERHANT");
+    }
+    if (!js.includes("/hero/domiz-hero-silent.mp4")) {
+        throw new Error("brak tymczasowego pliku wideo w mechanizmie");
     }
 
     let html = readFileSync(htmlPath, "utf8");
