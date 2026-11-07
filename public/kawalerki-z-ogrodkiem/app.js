@@ -1,4 +1,4 @@
-import { OFFERS, READ, LINK_CHECK } from './katalog.js';
+import { OFFERS, READ, LINK_CHECK } from '/kawalerki-z-ogrodkiem/katalog.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { city: '', status: '', q: '' };
