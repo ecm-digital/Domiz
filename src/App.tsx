@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
@@ -75,6 +75,8 @@ function App() {
               <Route path="/smart-home" element={<SmartHome />} />
               <Route path="/dodaj-nieruchomosc" element={<AddProperty />} />
               <Route path="/oferty" element={<Properties />} />
+              <Route path="/kawalerki-z-ogrodkiem" element={<Navigate to="/oferty?katalog=kawalerki" replace />} />
+              <Route path="/kawalerki-z-ogrodkiem/" element={<Navigate to="/oferty?katalog=kawalerki" replace />} />
               <Route path="/oferty/:id" element={<PropertyDetails />} />
               <Route path="/ulubione" element={<Favorites />} />
 

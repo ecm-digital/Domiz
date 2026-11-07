@@ -4,10 +4,12 @@ export interface Property {
     price: number;
     location: string;
     beds: number;
-    baths: number;
+    baths: number | null;
     sqft: number;
     type: 'dom' | 'mieszkanie' | 'dzialka';
-    status: 'sprzedaz' | 'wynajem';
+    status: 'sprzedaz' | 'wynajem' | 'zarezerwowane';
+    published?: boolean;
+    _staticPreview?: boolean;
     image: string;
     featured: boolean;
     description: string;
@@ -18,6 +20,18 @@ export interface Property {
         phone: string;
         email: string;
         image: string;
+    };
+    /** Przegląd ogłoszenia zewnętrznego. Brak tego pola = oferta Domiz. */
+    review?: {
+        code: string;
+        city: 'Warszawa' | 'Katowice';
+        market: 'pierwotny' | 'wtorny';
+        availability: 'wg_zrodla' | 'do_potwierdzenia';
+        parking: string | null;
+        gardenLabel: string;
+        checked: string;
+        sourceUrl: string;
+        sourceStatus: string;
     };
 }
 
