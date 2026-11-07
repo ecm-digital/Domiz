@@ -16,6 +16,7 @@ const NAV_MORE = [
     { key: 'nav.calculators', path: '/kalkulatory' },
     { key: 'nav.blog', path: '/blog' },
     { key: 'nav.smartHome', path: '/smart-home' },
+    { key: 'nav.gardenStudios', path: '/kawalerki-z-ogrodkiem/', href: true },
 ];
 
 export function Header() {
@@ -71,9 +72,11 @@ export function Header() {
                             </span>
                             <div className="nav-dropdown-menu">
                                 {NAV_MORE.map((item) => (
-                                    <Link key={item.key} to={item.path} className={`nav-dropdown-item ${location.pathname === item.path ? 'nav-active' : ''}`}>
-                                        {t(item.key)}
-                                    </Link>
+                                    item.href
+                                        ? <a key={item.key} href={item.path} className="nav-dropdown-item">{t(item.key)}</a>
+                                        : <Link key={item.key} to={item.path} className={`nav-dropdown-item ${location.pathname === item.path ? 'nav-active' : ''}`}>
+                                            {t(item.key)}
+                                        </Link>
                                 ))}
                             </div>
                         </div>
@@ -130,9 +133,11 @@ export function Header() {
                     <div className="mobile-nav-section">
                         <span className="mobile-nav-label">{t('nav.more')}</span>
                         {NAV_MORE.map((item) => (
-                            <Link key={item.key} to={item.path} className={`mobile-nav-item mobile-nav-sub ${location.pathname === item.path ? 'mobile-nav-active' : ''}`} onClick={() => setMobileOpen(false)}>
-                                {t(item.key)}
-                            </Link>
+                            item.href
+                                ? <a key={item.key} href={item.path} className="mobile-nav-item mobile-nav-sub" onClick={() => setMobileOpen(false)}>{t(item.key)}</a>
+                                : <Link key={item.key} to={item.path} className={`mobile-nav-item mobile-nav-sub ${location.pathname === item.path ? 'mobile-nav-active' : ''}`} onClick={() => setMobileOpen(false)}>
+                                    {t(item.key)}
+                                </Link>
                         ))}
                     </div>
                     <div className="mobile-nav-actions">
