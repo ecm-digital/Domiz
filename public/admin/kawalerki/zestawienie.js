@@ -1,6 +1,9 @@
-// Zestawienie 6.11.2026 (Europe/Warsaw). Ładowane dopiero po roli admina.
+// Zestawienie 6.11.2026 (Europe/Warsaw) plus wtórny odczyt 7.11.2026.
+// Ładowane dopiero po roli admina.
 // Kwoty w zł. Brak składnika = null, nigdy 0. Taras nie wchodzi do ogrodu.
 // Cennik Nordic odczytany z PDF (pozycje pomieszczeń przynależnych, data 26.06.2026).
+// Miasto jest polem rekordu (teraz Warszawa). Katowic nie dopisujemy, dopóki nie ma własnej paczki.
+import { WTORNY_UNITS } from './wtorny.js';
 
 export const UPDATED = '6.11.2026';
 export const BUDGET = 650000;
@@ -58,7 +61,7 @@ function nordicParking(cenaLokalu, cennikLokalu) {
   };
 }
 
-export const UNITS = [
+const PRIMARY_UNITS = [
   {
     id: 'NB-G101',
     kolejnosc: 1,
@@ -764,6 +767,8 @@ export const UNITS = [
   },
 ];
 
+export const UNITS = [...PRIMARY_UNITS, ...WTORNY_UNITS];
+
 export const WNIOSKI = [
   'G 1.01 zostaje punktem odniesienia na spotkanie 7.11.2026 o 12:00 przy Lazurowej 127. Przy pełnej cennikowej pozycji garażu z gniazdem (49 000 zł, nie dopłata) suma to 600 355 zł i mieści się w 650 tys. Przydział miejsca i ładowanie nadal są niepotwierdzone, a ogródek 5,56 m² nie wynika z załączonych JPG.',
   'Wśród innych lokali ze znaną sumą w limicie największy ogród ma Sochaczewska Vita C/1/6 (36,09 m², 609 084 zł). Bemowo Vita C2/F/44 jest najtańsze (567 966 zł) i ma ogród 22,7 m². To porównanie do odpowiedzi Develii, nie automatyczna zmiana celu.',
@@ -797,16 +802,25 @@ export const DATY = [
   { kiedy: '2.11.2026', co: 'Materiał i opinia Metro Zachód. Ceny „teraz” są z tego dnia, nie z żywego odczytu 6.11.' },
   { kiedy: '6.11.2026', co: 'Paczka ofert, odczyt PDF YIT, statusy YIT/Develia w researchu.' },
   { kiedy: '7.11.2026, 12:00', co: 'Spotkanie YIT, Lazurowa 127, lokale G 1.01 i G 1.03.' },
+  { kiedy: '7.11.2026 ok. 01:50', co: 'Odczyt ogłoszeń wtórnych z Warszawy (Otodom). Sprzedający nie potwierdził. Osobno od spotkania YIT.' },
   { kiedy: '20.11.2026', co: 'Deklarowana obniżka cen Metro Zachód o ok. 5%. Niepotwierdzona 6.11.' },
   { kiedy: '29.11.2026', co: 'Deklarowany rabat 10% na wykończenie PROFIT. Poza limitem 650 tys.' },
   { kiedy: 'ok. 2.12.2026', co: 'Koniec ok. 30-dniowej ważności kalkulacji wykończenia z 2.11.' },
   { kiedy: 'raty MZ', co: '5% w listopadzie 2026, 25% w styczniu 2027, 70% w maju 2027. Bez dnia miesiąca. Kwoty w kartach są od ceny deklarowanej po 20.11.' },
 ];
 
+export function miastoOf(u) {
+  return u.miasto || 'Warszawa';
+}
+
 export function budzetKlasa(u) {
   if (u.tor === 'odrzut' || u.dostepnosc === 'poza_kryterium') return 'odrzut';
   if (u.dostepnosc === 'REZERWACJA' || u.dostepnosc === 'REZERWACJA_WSTEPNA') return 'rezerwacja';
-  if (u.suma == null) return 'brak';
+  if (u.nieTrafienie) return u.suma != null && u.suma > BUDGET ? 'nie' : 'weryfikacja';
+  if (u.suma == null) {
+    if (u.ponadSamymLokalem) return 'nie';
+    return 'brak';
+  }
   return u.suma <= BUDGET ? 'tak' : 'nie';
 }
 
@@ -819,6 +833,7 @@ export function statusLabel(code) {
     REZERWACJA: 'Rezerwacja — nie wolne',
     NIEZNANA: 'Dostępność nieznana — nie sprzedane',
     poza_kryterium: 'Poza kryterium kawalerek',
+    OGLOSZENIE: 'Ogłoszenie aktywne 7.11.2026 ok. 01:50, sprzedający nie potwierdził',
   }[code] || code;
 }
 
@@ -836,6 +851,8 @@ export function filterUnits(state) {
   const q = (state.q || '').trim().toLowerCase();
   const list = UNITS.filter((u) => {
     if (state.tor && state.tor !== 'wszystkie' && u.tor !== state.tor) return false;
+    if (state.rynek && u.rynek !== state.rynek) return false;
+    if (state.miasto && miastoOf(u) !== state.miasto) return false;
     if (state.dev && u.dev !== state.dev) return false;
     if (state.dzielnica && u.dzielnica !== state.dzielnica) return false;
     if (state.inwestycja && u.inwestycja !== state.inwestycja) return false;

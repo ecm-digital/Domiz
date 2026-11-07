@@ -4,6 +4,7 @@ import {
   KOLEJNOSC_OPIS, OPINIE_MZ, WSPOLPRACA, PYTANIA, DATY,
   budzetKlasa, statusLabel, filterUnits, unique, cenaZaM2,
 } from './zestawienie.js';
+import { WTORNY_UWAGI } from './wtorny.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -29,6 +30,7 @@ const BUDGET_TAG = {
   brak: '<span class="tag chk">Brak sumy — nie wiadomo</span>',
   rezerwacja: '<span class="tag sale">Rezerwacja — nie liczyć jako wolne</span>',
   odrzut: '<span class="tag no">Poza rankingiem</span>',
+  weryfikacja: '<span class="tag sale">Do weryfikacji — nie trafienie budżetowe</span>',
 };
 
 const OGROD_TAG = {
@@ -36,6 +38,8 @@ const OGROD_TAG = {
   podany: 'ogród podany w źródle, bez rzutu w tym wdrożeniu',
   niepotwierdzony: 'ogród niepotwierdzony załączonym rysunkiem',
   nieznany: 'ogród nieznany (puste pole ≠ brak)',
+  opis: 'ogród z opisu ogłoszenia, nie z rzutu',
+  laczny: 'liczba łączy ogród i taras — nie jest samym ogrodem',
 };
 
 function link(url, label) {
@@ -57,9 +61,9 @@ function card(u) {
   const raty = u.harmonogram ? `<p>5% listopad 2026: ${fmt(u.harmonogram.w5)} zł<br>25% styczeń 2027: ${fmt(u.harmonogram.w25)} zł<br>70% maj 2027: ${fmt(u.harmonogram.w70)} zł<br><span class="small">${esc(u.harmonogram.bazaOpis)} Dni miesiąca brak.</span></p>` : '';
   const wykon = u.wykonczenie ? `<p>Dziś ok. ${fmt(u.wykonczenie.dzis)} zł. Po deklarowanym rabacie 29.11 ok. ${fmt(u.wykonczenie.poRabacie)} zł. ${esc(u.wykonczenie.status)}</p>` : '';
   return `<article class="card z-unit" id="lokal-${esc(u.id)}">
-    <div class="z-kicker"><span class="tag">${esc(u.id)}</span> ${u.rola === 'punkt_odniesienia' ? '<span class="tag nordic">Punkt odniesienia</span>' : ''} ${BUDGET_TAG[klasa] || ''}</div>
+    <div class="z-kicker"><span class="tag">${esc(u.id)}</span> <span class="tag${u.rynek === 'wtórny' ? ' wt' : ''}">${esc(u.rynek || 'pierwotny')}</span> ${u.rola === 'punkt_odniesienia' ? '<span class="tag nordic">Punkt odniesienia</span>' : ''} ${u.rynek === 'wtórny' && klasa === 'tak' ? '<span class="tag ok">Wg ogłoszenia w limicie</span>' : (BUDGET_TAG[klasa] || '')}</div>
     <h3>${esc(u.nazwa)}</h3>
-    <p class="small">${esc(u.dev)} · ${esc(u.dzielnica)}${u.adres ? ` · ${esc(u.adres)}` : ''} · ${u.pokoje ? `${u.pokoje} pok.` : 'dom'}</p>
+    <p class="small">${esc(u.dev)} · ${esc(u.dzielnica)}${u.adres ? ` · ${esc(u.adres)}` : ''} · ${u.pokojeTekst ? esc(u.pokojeTekst) : (u.pokoje ? `${u.pokoje} pok.` : 'dom')}</p>
     <p><b>${esc(statusLabel(u.dostepnosc))}</b> <span class="small">stan ${esc(u.dostepnoscData || '—')}</span></p>
     <div class="kv"><span>Lokal</span><b>${m2(u.m2)}</b></div>
     <div class="kv"><span>Ogród</span><b>${u.ogrod == null ? 'nieznany' : m2(u.ogrod)}</b></div>
@@ -77,6 +81,8 @@ function card(u) {
     ${u.odbiórUwaga ? `<p class="small">${esc(u.odbiórUwaga)}</p>` : ''}
     ${u.metro ? `<p class="small">Dojazd: ${esc(u.metro)}</p>` : ''}
     <p>${esc(u.uzasadnienie)}</p>
+    ${u.pcc ? `<p class="small">${esc(u.pcc)}</p>` : ''}
+    ${u.historiaId ? `<p class="small">To samo ogłoszenie co w odczycie 3.11, id ${esc(u.historiaId)}. Starej karty nie usuwamy.</p>` : ''}
     <p class="small">Ryzyko: ${esc(u.ryzyka || '')}</p>
     <p>${link(u.url, 'Karta oferty')} ${u.urlAlt ? ` · ${link(u.urlAlt, 'Drugie źródło')}` : ''}</p>
     <p class="small">${esc(u.zrodlo || '')} ${esc(u.rzut || '')}</p>
@@ -118,14 +124,16 @@ export function html(state, tabsHtml) {
   <div class="card"><p>${esc(WSPOLPRACA)} Mail do Develii poszedł 6.11, odpowiedzi w tej paczce nie ma. Pytania o współpracę nie są zgodą.</p></div>
   <h2 class="sec">Filtr listy</h2>
   <div class="mkt" role="group" aria-label="Tor">${chip('tor', 'dla_mnie', 'Dla mnie')}${chip('tor', 'klienci', 'Domiz / klienci')}${chip('tor', 'poza', 'Rezerwacje i leady')}${chip('tor', 'odrzut', 'Odrzucone')}${chip('tor', 'wszystkie', 'Wszystkie')}</div>
+  <div class="mkt" role="group" aria-label="Rynek">${chip('rynek', '', 'Rynek: wszystkie')}${chip('rynek', 'pierwotny', 'Pierwotny')}${chip('rynek', 'wtórny', 'Wtórny Warszawa')}</div>
+  ${state.rynek === 'wtórny' ? `<div class="caveats">${WTORNY_UWAGI.map((t) => `<div class="card"><p>${esc(t)}</p></div>`).join('')}</div>` : '<p class="small">Od 7.11.2026 są ogłoszenia wtórne z Warszawy. Filtr „Wtórny” je oddziela. Pusty parking nie dostaje znaczka limitu. Ogródek G 1.01 nadal jest niepotwierdzony załączonym rysunkiem.</p>'}
   <div class="filters">
     <label>Szukaj<input data-zkey="q" value="${esc(state.q || '')}" placeholder="np. D/37"></label>
     <label>Deweloper<select data-zkey="dev">${opts(unique('dev'), state.dev, 'wszyscy')}</select></label>
     <label>Dzielnica<select data-zkey="dzielnica">${opts(unique('dzielnica'), state.dzielnica, 'wszystkie')}</select></label>
     <label>Inwestycja<select data-zkey="inwestycja">${opts(unique('inwestycja'), state.inwestycja, 'wszystkie')}</select></label>
     <label>Pokoje<select data-zkey="pokoje">${opts(['1', '2'], state.pokoje, 'wszystkie')}</select></label>
-    <label>Dostępność<select data-zkey="status">${opts(['Free', 'Wolne', 'do_potwierdzenia', 'REZERWACJA_WSTEPNA', 'REZERWACJA', 'NIEZNANA'], state.status, 'wszystkie')}</select></label>
-    <label>Ogród<select data-zkey="ogrod">${opts(['potwierdzony', 'podany', 'niepotwierdzony', 'nieznany'], state.ogrod, 'wszystkie')}</select></label>
+    <label>Dostępność<select data-zkey="status">${opts(['Free', 'Wolne', 'do_potwierdzenia', 'OGLOSZENIE', 'REZERWACJA_WSTEPNA', 'REZERWACJA', 'NIEZNANA'], state.status, 'wszystkie')}</select></label>
+    <label>Ogród<select data-zkey="ogrod">${opts(['potwierdzony', 'podany', 'opis', 'laczny', 'niepotwierdzony', 'nieznany'], state.ogrod, 'wszystkie')}</select></label>
     <label>Budżet 650 tys.<select data-zkey="budzet">
       <option value="">wszystkie</option>
       <option value="tak"${state.budzet === 'tak' ? ' selected' : ''}>mieści się (znane składniki)</option>
