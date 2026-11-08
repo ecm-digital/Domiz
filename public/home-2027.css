@@ -18,10 +18,10 @@
 .home-2027 .hero-title {
     font-family: Fraunces, "Times New Roman", serif;
     font-weight: 460;
-    font-size: clamp(3.1rem, 8vw, 7.2rem);
-    line-height: 0.92;
-    letter-spacing: -0.045em;
-    max-width: 11ch;
+    font-size: clamp(2rem, 4.6vw, 3.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    max-width: 18ch;
 }
 
 .home-2027 .hero-subtitle {
@@ -119,9 +119,15 @@
 
 .home-static h1 {
     font-family: Fraunces, "Times New Roman", serif;
-    font-size: clamp(3rem, 10vw, 6rem);
-    line-height: 0.92;
-    max-width: 11ch;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    line-height: 1.08;
+    max-width: 18ch;
+}
+
+.home-choice-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
 }
 
 .home-static a {
