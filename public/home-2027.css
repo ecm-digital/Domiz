@@ -1,0 +1,157 @@
+.home-2027 {
+    background: #241f1b;
+}
+
+.home-2027 .hero-slide {
+    background: #241f1b url("/hero/domiz-hero-poster.jpg") center / cover no-repeat;
+}
+
+.home-2027 .hero-slide-image,
+.home-2027 .hero-slide-video {
+    object-fit: cover;
+}
+
+.home-2027 .hero-slide-overlay {
+    background: linear-gradient(90deg, rgba(28, 25, 21, 0.84) 0%, rgba(28, 25, 21, 0.42) 58%, rgba(28, 25, 21, 0.62) 100%);
+}
+
+.home-2027 .hero-title {
+    font-family: Fraunces, "Times New Roman", serif;
+    font-weight: 460;
+    font-size: clamp(2rem, 4.6vw, 3.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    max-width: 18ch;
+}
+
+.home-2027 .hero-subtitle {
+    max-width: 38rem;
+    font-size: 1.12rem;
+    line-height: 1.55;
+}
+
+.home-2027 .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.home-2027 .hero-actions a,
+.home-2027 .hero-actions button {
+    min-height: 2.9rem;
+}
+
+.home-2027 .hero-actions .hero-btn-secondary {
+    background: rgba(28, 25, 21, 0.88);
+    color: #f7f4ef !important;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.home-2027 .hero-film-toggle {
+    background: #1c1915;
+    color: #f7f4ef !important;
+    min-width: 9.5rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    font-weight: 650;
+}
+
+.home-2027 .search-card-glass {
+    background: #f7f4ef;
+    color: #1c1915;
+    border: 1px solid rgba(28, 25, 21, 0.12);
+    box-shadow: none;
+    backdrop-filter: none;
+    padding: 1.1rem;
+    border-radius: 1rem;
+    animation: none;
+}
+
+.home-2027 .search-card-title,
+.home-2027 .search-card-glass label,
+.home-2027 .search-card-glass .text-white,
+.home-2027 .search-card-glass .text-white-dim {
+    color: #1c1915 !important;
+}
+
+.home-2027 .search-card-title {
+    font-size: 0.95rem;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 650;
+}
+
+.home-2027 .search-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.home-2027 .search-input-glass,
+.home-2027 .search-submit-btn-glass {
+    min-height: 3rem;
+}
+
+.home-2027 .search-input-glass,
+.home-2027 .search-card-glass input,
+.home-2027 .search-card-glass select {
+    background: #fff;
+    color: #1c1915;
+    border: 1px solid rgba(28, 25, 21, 0.18);
+}
+
+.home-2027 .search-submit-btn-glass {
+    background: #1c1915;
+    color: #f7f4ef !important;
+}
+
+.home-2027 .hero-scroll-indicator {
+    display: none;
+}
+
+.home-static {
+    min-height: 100vh;
+    padding: 6rem 1.25rem 3rem;
+    background: #241f1b url("/hero/domiz-hero-poster.jpg") center / cover no-repeat;
+    color: #f7f4ef;
+}
+
+.home-static h1 {
+    font-family: Fraunces, "Times New Roman", serif;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    line-height: 1.08;
+    max-width: 18ch;
+}
+
+.home-choice-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.home-static a {
+    color: #f7f4ef;
+}
+
+@media (max-width: 800px) {
+    .home-2027 .hero-grid,
+    .home-2027 .search-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .home-2027 .hero-actions a,
+    .home-2027 .hero-actions button,
+    .home-2027 .search-submit-btn-glass {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-2027 .hero-slide,
+    .home-2027 .hero-slide-image,
+    .home-2027 .search-card-glass {
+        transition: none;
+        animation: none;
+    }
+}

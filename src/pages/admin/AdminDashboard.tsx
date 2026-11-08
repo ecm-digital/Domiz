@@ -215,7 +215,12 @@ export const AdminDashboard = () => {
     return (
         <div className="container" style={{ paddingTop: '120px', paddingBottom: '4rem', minHeight: '100vh' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1>Panel Administratora</h1>
+                <div>
+                    <h1>Panel Administratora</h1>
+                    <a href="/admin/kawalerki/" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                        Kawalerki z ogródkiem — zestawienie (osobne logowanie admina)
+                    </a>
+                </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <button
                         className="btn-primary"

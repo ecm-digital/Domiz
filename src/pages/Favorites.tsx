@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Heart, ArrowRight, Loader2 } from 'lucide-react';
 import { useProperties } from '../hooks/useProperties';
+import { gardenStudioProperties } from '../data/gardenOffers.js';
 import { useFavorites } from '../context/FavoritesContext';
 import { PropertyCard } from '../components/PropertyCard';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -12,7 +13,9 @@ export function Favorites() {
     const { favorites } = useFavorites();
     const { t } = useLanguage();
 
-    const favoriteProperties = properties.filter((p) => favorites.includes(p.id));
+    const takenIds = new Set(properties.map((property) => property.id));
+    const favoriteProperties = [...properties, ...gardenStudioProperties().filter((property) => !takenIds.has(property.id))]
+        .filter((property) => favorites.includes(property.id));
 
     if (loading) {
         return (

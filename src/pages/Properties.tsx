@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useProperties } from '../hooks/useProperties';
+import { gardenStudioProperties } from '../data/gardenOffers.js';
 import { PropertyCard } from '../components/PropertyCard';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { Search, SlidersHorizontal, Grid, List, X } from 'lucide-react';
@@ -11,6 +12,7 @@ import { useLanguage } from '../context/useLanguage';
 
 type PropertyType = 'wszystkie' | 'dom' | 'mieszkanie' | 'dzialka';
 type PropertyStatus = 'wszystkie' | 'sprzedaz' | 'wynajem';
+type CityFilter = 'wszystkie' | 'Warszawa' | 'Katowice';
 
 function PropertyCardSkeleton() {
     return (
@@ -32,15 +34,22 @@ export function Properties() {
     const urlSearch = searchParams.get('search') || '';
     const urlType = searchParams.get('type') || '';
     const urlMaxPrice = searchParams.get('maxPrice') || '';
+    const urlCity = searchParams.get('miasto') || '';
+    const urlCatalog = searchParams.get('katalog') || '';
 
     const [searchQuery, setSearchQuery] = useState(urlSearch);
     const { properties, loading } = useProperties();
+    const officeListings = properties.filter((property) => property.published !== false);
+    const takenIds = new Set(officeListings.map((property) => property.id));
+    const listings = [...officeListings, ...gardenStudioProperties().filter((property) => !takenIds.has(property.id))];
 
     const typeFromUrl = (urlType === 'dom' || urlType === 'mieszkanie' || urlType === 'dzialka') ? urlType : 'wszystkie';
     const maxPriceFromUrl = urlMaxPrice ? Math.min(Number(urlMaxPrice) || 2000000, 2000000) : 2000000;
 
     const [propertyType, setPropertyType] = useState<PropertyType>(typeFromUrl);
     const [propertyStatus, setPropertyStatus] = useState<PropertyStatus>('wszystkie');
+    const [city, setCity] = useState<CityFilter>(urlCity === 'Warszawa' || urlCity === 'Katowice' ? urlCity : 'wszystkie');
+    const [catalog, setCatalog] = useState<'wszystkie' | 'kawalerki'>(urlCatalog === 'kawalerki' ? 'kawalerki' : 'wszystkie');
     const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPriceFromUrl]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showFilters, setShowFilters] = useState(!!urlType || !!urlMaxPrice);
@@ -50,7 +59,9 @@ export function Properties() {
         setSearchQuery(urlSearch);
         if (urlType === 'dom' || urlType === 'mieszkanie' || urlType === 'dzialka') setPropertyType(urlType);
         if (urlMaxPrice) setPriceRange([0, Math.min(Number(urlMaxPrice), 2000000)]);
-    }, [urlSearch, urlType, urlMaxPrice]);
+        setCity(urlCity === 'Warszawa' || urlCity === 'Katowice' ? urlCity : 'wszystkie');
+        setCatalog(urlCatalog === 'kawalerki' ? 'kawalerki' : 'wszystkie');
+    }, [urlSearch, urlType, urlMaxPrice, urlCity, urlCatalog]);
 
     // Sync filtrów do URL (umożliwia udostępnianie linków z filtrami); debounce dla suwaka ceny
     useEffect(() => {
@@ -59,21 +70,27 @@ export function Properties() {
             if (searchQuery.trim()) params.set('search', searchQuery.trim());
             if (propertyType !== 'wszystkie') params.set('type', propertyType);
             if (priceRange[1] < 2000000 && priceRange[1] > 0) params.set('maxPrice', String(priceRange[1]));
+            if (city !== 'wszystkie') params.set('miasto', city);
+            if (catalog === 'kawalerki') params.set('katalog', 'kawalerki');
             const newQuery = params.toString();
             const current = searchParams.toString();
             if (newQuery !== current) setSearchParams(params, { replace: true });
         }, 200);
         return () => clearTimeout(t);
-    }, [searchQuery, propertyType, priceRange, searchParams, setSearchParams]);
+    }, [searchQuery, propertyType, priceRange, city, catalog, searchParams, setSearchParams]);
 
-    const filteredProperties = properties.filter(property => {
+    const filteredProperties = listings.filter(property => {
         const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             property.location.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = propertyType === 'wszystkie' || property.type === propertyType;
         const matchesStatus = propertyStatus === 'wszystkie' || property.status === propertyStatus;
         const matchesPrice = property.price >= priceRange[0] && property.price <= priceRange[1];
+        const matchesCity = city === 'wszystkie'
+            || property.review?.city === city
+            || property.location.toLowerCase().includes(city.toLowerCase());
+        const matchesCatalog = catalog !== 'kawalerki' || Boolean(property.review);
 
-        return matchesSearch && matchesType && matchesStatus && matchesPrice;
+        return matchesSearch && matchesType && matchesStatus && matchesPrice && matchesCity && matchesCatalog;
     });
 
 
@@ -264,6 +281,8 @@ export function Properties() {
                                     onClick={() => {
                                         setPropertyType('wszystkie');
                                         setPropertyStatus('wszystkie');
+                                        setCity('wszystkie');
+                                        setCatalog('wszystkie');
                                         setPriceRange([0, 2000000]);
                                         setSearchQuery('');
                                         trackEvent('properties_filters_cleared', { source: 'filters_panel' });
@@ -292,6 +311,41 @@ export function Properties() {
             {/* Results Section */}
             <section style={{ padding: '2rem 0 4rem' }}>
                 <div className="container">
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                        {(['wszystkie', 'Warszawa', 'Katowice'] as const).map((option) => (
+                            <button
+                                key={option}
+                                type="button"
+                                onClick={() => setCity(option)}
+                                style={{
+                                    padding: '0.5rem 0.9rem',
+                                    borderRadius: '999px',
+                                    border: '1px solid var(--color-border)',
+                                    background: city === option ? 'var(--color-text-main)' : 'white',
+                                    color: city === option ? 'white' : 'var(--color-text-main)',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem'
+                                }}
+                            >
+                                {option === 'wszystkie' ? t('properties.cityAll') : option}
+                            </button>
+                        ))}
+                    </div>
+                    {catalog === 'kawalerki' && (
+                        <div className="glass-panel" style={{ padding: '1rem 1.25rem', marginBottom: '1rem' }}>
+                            <p style={{ margin: '0 0 0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                                {t('properties.catalogNote')}
+                            </p>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setCatalog('wszystkie')}
+                            >
+                                {t('properties.showAllOffers')}
+                            </button>
+                        </div>
+                    )}
                     {/* Results Header */}
                     <div className="properties-results-header" style={{
                         display: 'flex',
@@ -367,6 +421,8 @@ export function Properties() {
                                 onClick={() => {
                                     setPropertyType('wszystkie');
                                     setPropertyStatus('wszystkie');
+                                    setCity('wszystkie');
+                                    setCatalog('wszystkie');
                                     setPriceRange([0, 2000000]);
                                     setSearchQuery('');
                                     trackEvent('properties_filters_cleared', { source: 'empty_state' });
@@ -381,8 +437,8 @@ export function Properties() {
                         <div className="properties-results-grid" style={{
                             display: 'grid',
                             gridTemplateColumns: viewMode === 'grid'
-                                ? 'repeat(auto-fill, minmax(320px, 1fr))'
-                                : '1fr', // For list view, show 1 column
+                                ? 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                                : '1fr',
                             gap: '1.5rem',
                             marginTop: '2rem'
                         }}>

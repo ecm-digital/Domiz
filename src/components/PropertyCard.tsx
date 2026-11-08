@@ -7,6 +7,7 @@ import { useLanguage } from '../context/useLanguage';
 import { trackEvent } from '../utils/analytics';
 
 const PHOTO_FALLBACK = '/properties/gwiazdy/salon.jpg';
+const REVIEW_PLACEHOLDER = '/configurator/placeholder.svg';
 
 export function PropertyCard(property: Property) {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ export function PropertyCard(property: Property) {
   const formattedPrice = property.status === 'wynajem'
     ? `${property.price.toLocaleString(language === 'en' ? 'en-US' : 'pl-PL')} zł/${t('common.month')}`
     : `${property.price.toLocaleString(language === 'en' ? 'en-US' : 'pl-PL')} zł`;
-  const cardImage = property.image.toLowerCase().includes('.png') ? PHOTO_FALLBACK : property.image;
+  const photoFallback = property.review ? REVIEW_PLACEHOLDER : PHOTO_FALLBACK;
+  const cardImage = property.image.toLowerCase().includes('.png') ? photoFallback : property.image;
 
   const openDetails = () => {
     trackEvent('property_open', {
@@ -45,7 +47,7 @@ export function PropertyCard(property: Property) {
           loading="lazy"
           style={{ objectPosition: 'center center' }}
           onError={(e) => {
-            e.currentTarget.src = PHOTO_FALLBACK;
+            e.currentTarget.src = photoFallback;
           }}
         />
         <button
@@ -95,7 +97,9 @@ export function PropertyCard(property: Property) {
             fontSize: '0.75rem', fontWeight: '600',
             boxShadow: 'var(--shadow-sm)'
           }}>
-            {property.status === 'sprzedaz' ? t('common.forSale') : t('common.forRent')}
+            {property.review
+              ? t('properties.externalBadge')
+              : property.status === 'sprzedaz' ? t('common.forSale') : t('common.forRent')}
           </div>
           {property.featured && (
             <div style={{
@@ -114,23 +118,39 @@ export function PropertyCard(property: Property) {
       <div className="card-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--color-text-main)', margin: 0 }}>{property.title}</h3>
-          <span style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '1rem', whiteSpace: 'nowrap' }}>{formattedPrice}</span>
+          <span style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '1rem', whiteSpace: 'nowrap', textAlign: 'right' }}>
+            {formattedPrice}
+            {property.review && (
+              <span style={{ display: 'block', color: 'var(--color-text-muted)', fontWeight: '500', fontSize: '0.75rem' }}>
+                {t('properties.unitPrice')}
+              </span>
+            )}
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
           <MapPin size={15} style={{ marginRight: '0.375rem', color: 'var(--color-text-muted)' }} />
           {property.location}
         </div>
+        {property.review && (
+          <p style={{ margin: '-0.5rem 0 1rem', color: 'var(--color-text-muted)', fontSize: '0.8125rem', lineHeight: 1.45 }}>
+            {property.review.availability === 'do_potwierdzenia'
+              ? t('properties.availabilityCheck')
+              : t('properties.availabilitySource')}
+          </p>
+        )}
 
         <div className="card-stats">
           <div>
             <Bed size={18} />
             <span style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-text-muted)' }}>{property.beds}</span>
           </div>
+          {property.baths != null && (
           <div style={{ borderLeft: '1px solid var(--color-border)' }}>
             <Bath size={18} />
             <span style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-text-muted)' }}>{property.baths}</span>
           </div>
+          )}
           <div style={{ borderLeft: '1px solid var(--color-border)' }}>
             <Square size={18} />
             <span style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-text-muted)' }}>{property.sqft} m²</span>

@@ -43,10 +43,10 @@ const STATIC_PAGES = [
     },
     {
         path: '/osiedle-tluszcz',
-        title: 'Dom pod Warszawą - Osiedle Tłuszcz Sasanka XL z garażem | Domiz Homes',
-        description: 'Szukasz domu pod Warszawą? Osiedle Tłuszcz przy ul. Zaściankowej to kameralne domy Sasanka XL z garażem, ogrodem i dojazdem PKP do Warszawy.',
-        keywords: 'dom pod Warszawą, domy pod Warszawą, dom z garażem pod Warszawą, domy okolice Warszawy, dom Tłuszcz, domy Tłuszcz, Sasanka XL Tłuszcz, dom z ogrodem Mazowieckie, dom powiat wołomiński',
-        image: `${BASE_URL}/osiedle-tluszcz/og-osiedle-tluszcz.jpg`,
+        title: 'Sasanka XL w Tłuszczu',
+        description: 'Trzy sypialnie, własny ogród i garaż. Sasanka XL przy ul. Zaściankowej w Tłuszczu. Grafika jest wizualizacją poglądową, nie zdjęciem budowy.',
+        keywords: 'Sasanka XL Tłuszcz, dom z ogrodem Tłuszcz, dom z garażem Tłuszcz, ul. Zaściankowa',
+        image: `${BASE_URL}/osiedle-tluszcz/wizualizacja-osiedla-v6.png`,
         priority: '0.9',
     },
     {
@@ -288,7 +288,7 @@ async function generatePages() {
                 "@id": `${osiedleMeta.url}#breadcrumbs`,
                 "itemListElement": [
                     { "@type": "ListItem", "position": 1, "name": "Domiz Homes", "item": BASE_URL },
-                    { "@type": "ListItem", "position": 2, "name": "Dom pod Warszawą - Osiedle Tłuszcz", "item": osiedleMeta.url }
+                    { "@type": "ListItem", "position": 2, "name": "Sasanka XL w Tłuszczu", "item": osiedleMeta.url }
                 ]
             }
         ]

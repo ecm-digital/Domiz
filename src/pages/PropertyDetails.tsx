@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProperties } from '../hooks/useProperties';
+import { gardenStudioProperties } from '../data/gardenOffers.js';
 import { MapPin, Bed, Bath, Square, ArrowLeft, Phone, Mail, Check, Share2, Loader2, X, ChevronLeft, ChevronRight, ShieldCheck, FileCheck, Banknote } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import agentPhoto from '../assets/tomaszgnat.jpeg';
@@ -14,13 +15,16 @@ export function PropertyDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { properties, loading } = useProperties();
+    const officeListings = properties.filter((item) => item.published !== false);
+    const takenIds = new Set(officeListings.map((item) => item.id));
+    const listings = [...officeListings, ...gardenStudioProperties().filter((item) => !takenIds.has(item.id))];
     const { t, language } = useLanguage();
 
     // Wyciągnij faktyczne ID z URL (np. z "piekny-dom-17384938" weź "17384938")
     const propertyId = id?.split('-').pop();
 
     // Bezpieczne porównanie ID (string vs number)
-    const property = properties.find(p => String(p.id) === propertyId);
+    const property = listings.find(p => String(p.id) === propertyId);
 
     const [activeImage, setActiveImage] = useState(0);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -105,12 +109,14 @@ export function PropertyDetails() {
             numberOfRooms: property.beds,
             floorSize: { '@type': 'QuantitativeValue', value: property.sqft, unitCode: 'MTK' },
             offers: { '@type': 'Offer', price: property.price, priceCurrency: 'PLN' },
-            realEstateAgent: {
-                '@type': 'RealEstateAgent',
-                name: property.agent.name,
-                email: property.agent.email,
-                telephone: property.agent.phone,
-            },
+            ...(property.review ? {} : {
+                realEstateAgent: {
+                    '@type': 'RealEstateAgent',
+                    name: property.agent.name,
+                    email: property.agent.email,
+                    telephone: property.agent.phone,
+                },
+            }),
         };
         let script = document.getElementById('property-jsonld') as HTMLScriptElement | null;
         if (!script) {
@@ -155,7 +161,7 @@ export function PropertyDetails() {
     const displayAgentPhone = '+48 517 303 400';
 
     // Filter other properties for "See Also" section
-    const relatedProperties = properties
+    const relatedProperties = listings
         .filter(p => String(p.id) !== propertyId)
         .slice(0, 3);
 
@@ -280,8 +286,11 @@ export function PropertyDetails() {
                                 <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)', fontWeight: 'bold', color: 'var(--color-text-main)', margin: 0, lineHeight: 1.2 }}>
                                     {property.title}
                                 </h1>
-                                <div style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: '800', color: '#10b981', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: '800', color: '#10b981', whiteSpace: 'nowrap', textAlign: 'right' }}>
                                     {formattedPrice}
+                                    {property.review && (
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('properties.unitPrice')}</div>
+                                    )}
                                 </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)', fontSize: '1.125rem' }}>
@@ -301,11 +310,13 @@ export function PropertyDetails() {
                                 <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Sypialnie</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{property.beds}</div>
                             </div>
+                            {property.baths != null && (
                             <div style={{ textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>
                                 <Bath size={28} color="#10b981" style={{ margin: '0 auto 0.5rem' }} />
                                 <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Łazienki</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{property.baths}</div>
                             </div>
+                            )}
                             <div style={{ textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>
                                 <Square size={28} color="#10b981" style={{ margin: '0 auto 0.5rem' }} />
                                 <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Powierzchnia</div>
@@ -355,7 +366,25 @@ export function PropertyDetails() {
                     {/* Right Column: Agent & Sidebar */}
                     <div className="property-sidebar">
                         <div style={{ position: 'sticky', top: '120px' }}>
-                            {/* Agent Card */}
+                            {property.review ? (
+                            <div className="glass-panel" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
+                                <h4 style={{ margin: '0 0 0.75rem', fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>{t('properties.externalTitle')}</h4>
+                                <p style={{ margin: '0 0 1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>{t('properties.externalLead')}</p>
+                                <p style={{ margin: '0 0 0.5rem', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>Zapis źródła: {property.review.checked}</p>
+                                <p style={{ margin: '0 0 0.5rem', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>Status: {property.review.sourceStatus}</p>
+                                <p style={{ margin: '0 0 0.5rem', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>Parking: {property.review.parking ?? 'nieustalone'}</p>
+                                <p style={{ margin: '0 0 1.25rem', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>Ogród: {property.review.gardenLabel}</p>
+                                <a
+                                    href={property.review.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="btn-primary"
+                                    style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}
+                                >
+                                    {t('properties.openSource')}
+                                </a>
+                            </div>
+                            ) : (
                             <div className="glass-panel" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                     <img
@@ -417,6 +446,7 @@ export function PropertyDetails() {
                                     Umów Prezentację
                                 </button>
                             </div>
+                            )}
 
                             {/* Share */}
                             <div className="glass-panel" style={{ padding: '1.5rem' }}>
@@ -525,6 +555,18 @@ export function PropertyDetails() {
 
             {/* Mobile Sticky CTA */}
             <div className="mobile-sticky-cta">
+                {property.review ? (
+                <a
+                    href={property.review.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cta-button primary"
+                    style={{ textDecoration: 'none' }}
+                >
+                    {t('properties.openSource')}
+                </a>
+                ) : (
+                <>
                 <a
                     href={`tel:${displayAgentPhone}`}
                     className="cta-button primary"
@@ -551,6 +593,8 @@ export function PropertyDetails() {
                 >
                     <Mail size={18} /> Formularz kontaktowy
                 </button>
+                </>
+                )}
             </div>
 
             {/* CSS for Responsive Layout & Lightbox & Sticky CTA */}
