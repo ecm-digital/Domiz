@@ -86,6 +86,28 @@ export function patchSasanka({ chunkPath, outDir }) {
         "Plan ilustracyjny, nie geodezyjny. Nie odczytuj z niego powierzchni ogrodów A–E.",
         "plan",
     );
+    js = once(js, 'children:"5 domów"', 'children:"Plan poglądowy"', "etykieta planu");
+    js = once(js, 'e.jsx("h2",{children:"Aktualna lista wariantów w inwestycji"})', 'e.jsx("h2",{children:"Układ A–E na planie ilustracyjnym"})', "nagłówek planu");
+    js = once(
+        js,
+        "Wybierz konkretny lokal albo dom wolnostojący i poproś o aktualną dostępność, cenę oraz standard.",
+        "To nie jest lista sprzedaży. Dostępność i cena są do potwierdzenia.",
+        "opis planu",
+    );
+    js = once(js, 'children:"Rzuty 3D"', 'children:"Rzut modelu"', "etykieta rzutu");
+    js = once(js, 'e.jsx("h2",{children:"Parter i piętro Sasanki XL z garażem"})', 'e.jsx("h2",{children:"Rzut modelowy: parter i piętro"})', "nagłówek rzutu");
+    js = once(
+        js,
+        "Zobacz układ najważniejszych pomieszczeń: wygodną strefę dzienną na parterze, garaż w bryle oraz piętro z trzema sypialniami, dużą łazienką i garderobą.",
+        "Rzut modelu SASANKA XL, nie karta pomiarowa domów A–E. Suma pomieszczeń bez garażu to 83,00 m². Garaż 18,09 m² jest osobno.",
+        "opis rzutu",
+    );
+    js = once(
+        js,
+        "Finalna cena zależy od wybranego domu, dostępności i zakresu wyposażenia. Zostaw kontakt, a wyślemy aktualny cennik dla konkretnego lokalu lub domu wolnostojącego.",
+        "Cena i dostępność są do potwierdzenia. Nie publikujemy kwoty, dopóki nie ma aktualnego cennika.",
+        "warianty",
+    );
     js = once(
         js,
         "Obecnie używamy zdjęć poglądowych. Po otrzymaniu licencjonowanych materiałów Sasanka XL podmienimy je na właściwe zdjęcia projektu.",

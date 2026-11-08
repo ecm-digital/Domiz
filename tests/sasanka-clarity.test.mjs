@@ -24,6 +24,9 @@ test("Sasanka nie obiecuje ceny, pięciu dostępnych ani fundamentów", () => {
     assert.match(js, /przygotowany grunt, bez fundamentów/);
     assert.match(js, /Nie wiemy, czy fundamenty istnieją/);
     assert.match(js, /Plan ilustracyjny, nie geodezyjny/);
+    assert.match(js, /To nie jest lista sprzedaży/);
+    assert.match(js, /Rzut modelu SASANKA XL, nie karta pomiarowa/);
+    assert.match(js, /Nie publikujemy kwoty, dopóki nie ma aktualnego cennika/);
     assert.match(js, /To nie są zdjęcia domów przy ul\. Zaściankowej/);
     assert.match(js, /aria-label":"Który dom Cię interesuje\?"/);
     assert.match(js, /pick\(\(en\?"House ":"Dom "\)\+name\)/);
