@@ -9,6 +9,14 @@
     ],
     "rewrites": [
       {
+        "source": "/osiedle-tluszcz",
+        "destination": "/osiedle-tluszcz/index.html"
+      },
+      {
+        "source": "/osiedle-tluszcz/",
+        "destination": "/osiedle-tluszcz/index.html"
+      },
+      {
         "source": "/admin/**",
         "destination": "/index.html"
       },
@@ -18,6 +26,18 @@
       }
     ],
     "headers": [
+      {
+        "source": "/osiedle-tluszcz",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "/osiedle-tluszcz/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
       {
         "source": "/admin/kawalerki",
         "headers": [
