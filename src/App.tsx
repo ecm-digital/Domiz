@@ -31,6 +31,9 @@ const ClientPortalLogin = lazy(() => import('./pages/ClientPortalLogin').then(m 
 const CallCardPreview = import.meta.env.DEV
   ? lazy(() => import('./pages/admin/CallCardPreview').then((module) => ({ default: module.CallCardPreview })))
   : null;
+const WorkflowPreview = import.meta.env.DEV
+  ? lazy(() => import('./pages/admin/WorkflowPreview').then((module) => ({ default: module.WorkflowPreview })))
+  : null;
 
 function PageFallback() {
     return (
@@ -101,6 +104,7 @@ function AppLayout() {
             <Route path="/panel-klienta/demo" element={<ClientPortalRoute><ClientPortal /></ClientPortalRoute>} />
             <Route path="/admin/login" element={<Login />} />
             {CallCardPreview ? <Route path="/admin/dev/karta-rozmowy" element={<CallCardPreview />} /> : null}
+            {WorkflowPreview ? <Route path="/admin/dev/kolejka" element={<WorkflowPreview />} /> : null}
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/properties/new" element={<ProtectedRoute><AdminPropertyForm /></ProtectedRoute>} />
             <Route path="/admin/properties/:id/edit" element={<ProtectedRoute><AdminPropertyForm /></ProtectedRoute>} />

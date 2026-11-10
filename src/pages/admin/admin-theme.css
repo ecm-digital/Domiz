@@ -131,9 +131,150 @@ body:has(.app--admin) {
 }
 
 .app--admin .admin-tabs > button[aria-pressed="true"],
-.app--admin .admin-tab-video.is-active {
+.app--admin .admin-tab-video.is-active,
+.app--admin .admin-more__panel > button[aria-pressed="true"] {
   background: var(--admin-ink) !important;
   color: var(--admin-cream) !important;
+}
+
+.app--admin .admin-more__panel {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 0.2rem;
+}
+
+.app--admin .admin-more__panel > button,
+.app--admin .admin-more__panel > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 21, 0.05);
+  color: var(--admin-ink, #1c1915);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.app--admin .call-queue {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(28, 25, 21, 0.12);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.app--admin .call-queue__head,
+.app--admin .call-queue__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.app--admin .call-queue__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.app--admin .call-queue__head h3,
+.app--admin .call-queue__row p {
+  margin: 0.15rem 0 0;
+}
+
+.app--admin .call-queue__list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app--admin .call-queue__row {
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: #f7f4ef;
+}
+
+.app--admin .call-queue__badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #1c1915;
+  color: #f7f4ef;
+  font-weight: 750;
+}
+
+.app--admin .call-queue__kind {
+  color: #8a8178;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app--admin .call-queue__actions .btn-primary,
+.app--admin .call-queue__actions a.btn-primary {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.app--admin .acquisition-call-filter,
+.app--admin .admin-offers__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.app--admin .acquisition-call-filter button,
+.app--admin .admin-offers__toolbar button {
+  min-height: 48px;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid rgba(28, 25, 21, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 700;
+}
+
+.app--admin .acquisition-call-filter button[aria-pressed="true"],
+.app--admin .admin-offers__toolbar button[aria-pressed="true"] {
+  background: #1c1915;
+  color: #f7f4ef;
+}
+
+.app--admin .call-card__instagram {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f7f4ef;
+}
+
+@media (max-width: 720px) {
+  .app--admin .admin-more__toggle,
+  .app--admin .call-queue__row,
+  .app--admin .call-queue__actions,
+  .app--admin .call-queue__actions .btn-primary,
+  .app--admin .call-queue__actions a.btn-primary,
+  .app--admin .acquisition-call-filter button,
+  .app--admin .admin-offers__toolbar button {
+    width: 100%;
+  }
+
+  .app--admin .call-queue__row {
+    flex-direction: column;
+  }
 }
 
 .app--admin .btn-primary,

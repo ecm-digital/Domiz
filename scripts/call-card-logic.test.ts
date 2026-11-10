@@ -65,7 +65,9 @@ test('wynik rozmowy przesuwa etap i zawsze ma notatkę do historii', () => {
     assert.equal(stageForCallResult('contacted', 'refused', false), 'rejected');
     assert.equal(stageForCallResult('ready_to_call', 'agency', false), 'rejected');
     assert.equal(stageForCallResult('acquired', 'refused', false), 'acquired');
+    assert.equal(stageForCallResult('consent_draft', 'no_answer', false), 'consent_draft');
     assert.equal(stageAfterConsentLink('ready_to_call'), 'contacted');
+    assert.equal(stageAfterConsentLink('consent_draft'), 'consent_draft');
     assert.equal(stageAfterConsentLink('proposal'), 'proposal');
     const note = formatCallNote('no_answer', 'drugi raz', '2026-11-12');
     assert.match(note, /Nie odebrał/);

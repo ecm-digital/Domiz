@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { uploadImage } from '../../utils/uploadImage';
+import { publishBlockReason } from './workflowQueue';
 // import { useAuth } from '../../context/AuthContext'; // Protected route handles auth check
 import { Loader2, ArrowLeft, Upload } from 'lucide-react';
 import './admin-theme.css';
@@ -25,7 +26,7 @@ const INITIAL_STATE = {
     image: '',
     images: [] as string[],
     featured: false,
-    published: true,
+    published: false,
     seoTitle: '',
     seoDescription: '',
     seoKeywords: '',
@@ -45,6 +46,8 @@ export const AdminPropertyForm = () => {
     // ProtectedRoute handles redirection if not logged in
 
     const [formData, setFormData] = useState(INITIAL_STATE);
+    const [publishReason, setPublishReason] = useState<string | null>(publishBlockReason(null));
+    const [publishedOnLoad, setPublishedOnLoad] = useState(false);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
 
@@ -246,7 +249,15 @@ Opis bazowy: ${formData.description}`;
                     const docRef = doc(db, "properties", id);
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
-                        setFormData({ ...INITIAL_STATE, ...docSnap.data() } as any);
+                        const data = docSnap.data() as typeof INITIAL_STATE & { ownerConsentId?: string; published?: boolean };
+                        setFormData({ ...INITIAL_STATE, ...data } as any);
+                        setPublishedOnLoad(data.published === true);
+                        let consent = null;
+                        if (data.ownerConsentId) {
+                            const consentSnap = await getDoc(doc(db, 'ownerConsents', data.ownerConsentId));
+                            if (consentSnap.exists()) consent = consentSnap.data() as { status?: string; consentSite?: boolean };
+                        }
+                        setPublishReason(publishBlockReason(consent));
                     } else {
                         alert("Nie znaleziono oferty!");
                         navigate('/admin');
@@ -304,6 +315,11 @@ Opis bazowy: ${formData.description}`;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (formData.published && publishReason && !publishedOnLoad) {
+            alert(publishReason);
+            setFormData((prev) => ({ ...prev, published: false }));
+            return;
+        }
         setLoading(true);
 
         try {
@@ -599,11 +615,17 @@ Opis bazowy: ${formData.description}`;
                         type="checkbox"
                         name="published"
                         checked={formData.published}
-                        onChange={(e) => setFormData(prev => ({ ...prev, published: e.target.checked }))}
+                        onChange={(e) => {
+                            if (e.target.checked && publishReason) {
+                                alert(publishReason);
+                                return;
+                            }
+                            setFormData(prev => ({ ...prev, published: e.target.checked }));
+                        }}
                         id="published-check"
                         style={{ marginTop: '0.2rem' }}
                     />
-                    <label htmlFor="published-check" style={{ cursor: 'pointer' }}><strong>{formData.published ? 'Oferta opublikowana na stronie' : 'Wersja robocza — niewidoczna na stronie'}</strong><span style={{ display: 'block', marginTop: '0.25rem', color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{formData.published ? 'Klienci mogą znaleźć i otworzyć tę ofertę.' : 'Uzupełnij dane i zdjęcia, a następnie zaznacz to pole, aby opublikować ofertę.'}</span></label>
+                    <label htmlFor="published-check" style={{ cursor: 'pointer' }}><strong>{formData.published ? 'Oferta opublikowana na stronie' : 'Wersja robocza — niewidoczna na stronie'}</strong><span style={{ display: 'block', marginTop: '0.25rem', color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{formData.published && publishedOnLoad && publishReason ? 'Ta oferta jest już na stronie. Po ukryciu ponowna publikacja wymaga zgody na stronę.' : publishReason || (formData.published ? 'Klienci mogą znaleźć i otworzyć tę ofertę.' : 'Nowa oferta startuje jako szkic. Publikacja wymaga powiązanej zgody na stronę.')}</span></label>
                 </div>
 
                 <button type="submit" className="btn-primary" disabled={loading || uploading} style={{ marginTop: '1rem', padding: '1rem', fontSize: '1.1rem', justifyContent: 'center' }}>

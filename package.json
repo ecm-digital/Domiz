@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:call-card": "node --experimental-strip-types --test scripts/call-card-logic.test.ts",
+    "test:workflow": "node --experimental-strip-types --test scripts/workflow-queue.test.ts",
     "test:consent-rules": "firebase emulators:exec --only firestore --project demo-domiz-callcard \"node scripts/owner-consent.rules.test.mjs\"",
     "preview": "vite preview",
     "postbuild": "node scripts/generate-pages.js"

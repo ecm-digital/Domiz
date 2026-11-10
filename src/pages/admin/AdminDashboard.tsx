@@ -13,8 +13,11 @@ import './AdminDashboard.css';
 import './admin-theme.css';
 import { ClientAccountCreator } from './ClientAccountCreator';
 import { AcquisitionCallCard } from './AcquisitionCallCard';
+import { AdminTabBar } from './AdminTabBar';
+import { CallQueuePanel } from './CallQueuePanel';
 import { CONSENT_TTL_MS, buildConsentLink, buildOwnerConsentFields, callbackDateToIso, consentCardStatus, consentForLead, formatCallNote, newConsentToken, stageAfterConsentLink, stageForCallResult } from './callCardLogic';
 import type { CallResultId, OwnerConsentLike } from './callCardLogic';
+import { EXTRA_LISTING_SOURCES, buildCallQueue, hasFinishedAudit, isOldUnpublishedImport, isPrivateAdvertiser, listingSourceKey, publishBlockReason, shouldCreateConsentDraft, stageAfterConfirmedConsent } from './workflowQueue';
 
 type PipelineStage = 'new' | 'qualified' | 'contacted' | 'presentation' | 'negotiation' | 'won' | 'lost';
 type StoredLeadStatus = PipelineStage | 'closed';
@@ -81,7 +84,7 @@ const EMPTY_NEW_LEAD: NewLeadDraft = {
     name: '', email: '', phone: '', source: 'CRM — ręcznie', leadStatus: 'new', owner: '', followUpDate: '', message: '',
 };
 
-type AcquisitionStage = 'new' | 'audit' | 'ready_to_call' | 'contacted' | 'meeting' | 'proposal' | 'acquired' | 'nurture' | 'rejected';
+type AcquisitionStage = 'new' | 'audit' | 'ready_to_call' | 'contacted' | 'consent_draft' | 'meeting' | 'proposal' | 'acquired' | 'nurture' | 'rejected';
 interface AcquisitionNote { id: string; text: string; createdAt: string; author: string; }
 interface AuditScores { photos: number; description: number; price: number; positioning: number; completeness?: number; conversion?: number; }
 interface AuditDraft {
@@ -308,6 +311,7 @@ interface PropertyLead {
     rooms?: number;
     isFavorite?: boolean;
     activePropertyId?: number;
+    draftPropertyId?: number;
     notes?: AcquisitionNote[];
     tasks?: AcquisitionTask[];
     activities?: AcquisitionActivity[];
@@ -457,6 +461,7 @@ const ACQUISITION_STAGES: Array<{ id: AcquisitionStage; label: string; color: st
     { id: 'audit', label: 'Audyt ogłoszenia', color: '#7c3aed', background: '#f5f3ff' },
     { id: 'ready_to_call', label: 'Gotowe do kontaktu', color: '#b45309', background: '#fffbeb' },
     { id: 'contacted', label: 'Rozmowa z właścicielem', color: '#1d4ed8', background: '#eff6ff' },
+    { id: 'consent_draft', label: 'Zgoda — szkic oferty', color: '#0f766e', background: '#f0fdfa' },
     { id: 'meeting', label: 'Spotkanie / prezentacja planu', color: '#c2410c', background: '#fff7ed' },
     { id: 'proposal', label: 'Oferta współpracy', color: '#9a3412', background: '#fff7ed' },
     { id: 'acquired', label: 'Umowa podpisana', color: '#047857', background: '#ecfdf5' },
@@ -508,13 +513,18 @@ export const AdminDashboard = () => {
     const [creatingLead, setCreatingLead] = useState(false);
     const [propertyLeads, setPropertyLeads] = useState<PropertyLead[]>([]);
     const propertyLeadsRef = useRef(propertyLeads);
+    const consentDraftInFlight = useRef(new Set<string>());
     propertyLeadsRef.current = propertyLeads;
     const [ownerConsentsById, setOwnerConsentsById] = useState<Record<string, OwnerConsentLike>>({});
     const [propertyLeadsLoading, setPropertyLeadsLoading] = useState(true);
     const [acquisitionFilter, setAcquisitionFilter] = useState<'all' | AcquisitionStage>('all');
     const [acquisitionView, setAcquisitionView] = useState<'list' | 'board'>('list');
     const [acquisitionSearch, setAcquisitionSearch] = useState('');
-    const [acquisitionSourceFilter, setAcquisitionSourceFilter] = useState<'all' | 'Otodom' | 'OLX' | 'Facebook'>('all');
+    const [acquisitionSourceFilter, setAcquisitionSourceFilter] = useState('all');
+    const [callTodayOnly, setCallTodayOnly] = useState(false);
+    const [moreTabsOpen, setMoreTabsOpen] = useState(false);
+    const [showOldImports, setShowOldImports] = useState(false);
+    const [ownerLeadCount, setOwnerLeadCount] = useState(0);
     const [acquisitionAssigneeFilter, setAcquisitionAssigneeFilter] = useState<'all' | 'unassigned' | (typeof PROPERTY_CARETAKERS)[number]>('all');
     const [privateOnly, setPrivateOnly] = useState(false);
     const [attentionOnly, setAttentionOnly] = useState(false);
@@ -611,7 +621,7 @@ export const AdminDashboard = () => {
                 items.push({ id: `decision:${lead.id}:${lead.proposal.decisionDate}`, type: 'decision', title: overdue ? 'Termin decyzji minął' : lead.proposal.decisionDate === today ? 'Decyzja właściciela dzisiaj' : 'Decyzja właściciela jutro', body: lead.title || 'Potencjalna oferta', leadId: lead.id, assignee: lead.assignee, date: lead.proposal.decisionDate, priority: overdue ? 95 : 80 });
             }
 
-            if (lead.auditSummary && lead.stage === 'audit') {
+            if (hasFinishedAudit(lead) && (lead.stage === 'new' || lead.stage === 'audit' || lead.stage === 'ready_to_call')) {
                 items.push({ id: `audit:${lead.id}:${lead.auditedAt || lead.updatedAt || 'ready'}`, type: 'audit', title: 'Audyt jest gotowy', body: `${lead.title || 'Oferta'} — można przygotować kontakt z właścicielem`, leadId: lead.id, assignee: lead.assignee, priority: 60 });
             }
 
@@ -624,6 +634,14 @@ export const AdminDashboard = () => {
         return items.sort((a, b) => b.priority - a.priority || (a.date || '').localeCompare(b.date || ''));
     }, [propertyLeads]);
     const unreadNotifications = crmNotifications.filter((notification) => !readNotificationIds.includes(notification.id));
+    const callQueue = useMemo(() => buildCallQueue(propertyLeads), [propertyLeads]);
+    const oldImportCount = properties.filter((property) => isOldUnpublishedImport(property)).length;
+    const visibleOffers = showOldImports ? properties : properties.filter((property) => !isOldUnpublishedImport(property));
+    const callQueueIds = useMemo(() => new Set(callQueue.map((row) => row.lead.id)), [callQueue]);
+    const acquisitionSourceOptions = useMemo(() => {
+        const present = new Set(propertyLeads.map((item) => listingSourceKey(item)).filter(Boolean));
+        return ['Otodom', 'OLX', 'Facebook', ...EXTRA_LISTING_SOURCES].filter((source) => present.has(source));
+    }, [propertyLeads]);
 
     const filteredPropertyLeads = useMemo(() => {
         const needle = acquisitionSearch.trim().toLocaleLowerCase('pl-PL');
@@ -631,19 +649,20 @@ export const AdminDashboard = () => {
         const filtered = propertyLeads.filter((item) => {
             const matchesStage = acquisitionFilter === 'all' || (item.stage || 'new') === acquisitionFilter;
             const matchesText = !needle || [item.title, item.location, item.price, item.assignee, item.ownerName, item.sourceDetails?.advertiserType].filter(Boolean).join(' ').toLocaleLowerCase('pl-PL').includes(needle);
-            const itemSource = getListingSource(item.url) || (item.source?.startsWith('Otodom') ? 'Otodom' : item.source) || '';
+            const itemSource = listingSourceKey(item);
             const matchesSource = acquisitionSourceFilter === 'all' || itemSource === acquisitionSourceFilter;
             const matchesAssignee = acquisitionAssigneeFilter === 'all' || (acquisitionAssigneeFilter === 'unassigned' ? !item.assignee : item.assignee === acquisitionAssigneeFilter);
-            const matchesPrivate = !privateOnly || /prywat/i.test(item.sourceDetails?.advertiserType || '');
+            const matchesPrivate = !privateOnly || isPrivateAdvertiser(item.sourceDetails?.advertiserType);
+            const matchesCallToday = !callTodayOnly || callQueueIds.has(item.id);
             const requiresAttention = (item.tasks || []).some((task) => task.status === 'open' && task.dueDate < today) || Boolean(item.proposal?.decisionDate && !item.proposalDecision && item.proposal.decisionDate < today);
             const incomplete = !item.ownerPhone || !item.propertyDraft?.image && !item.propertyDraft?.images?.length || !item.price || ((item.stage === 'audit' || item.stage === 'ready_to_call') && !item.auditSummary);
-            return matchesStage && matchesText && matchesSource && matchesAssignee && matchesPrivate && (!attentionOnly || requiresAttention) && (!incompleteOnly || incomplete);
+            return matchesStage && matchesText && matchesSource && matchesAssignee && matchesPrivate && matchesCallToday && (!attentionOnly || requiresAttention) && (!incompleteOnly || incomplete);
         });
         const priceValue = (value?: string) => Number((value || '').replace(/[^\d]/g, '')) || 0;
         const nextDeadline = (item: PropertyLead) => [...(item.tasks || []).filter((task) => task.status === 'open').map((task) => task.dueDate), ...(item.proposal?.decisionDate && !item.proposalDecision ? [item.proposal.decisionDate] : [])].sort()[0] || '9999-12-31';
         return filtered.slice().sort((a, b) => acquisitionSort === 'deadline' ? nextDeadline(a).localeCompare(nextDeadline(b)) : acquisitionSort === 'price_desc' ? priceValue(b.price) - priceValue(a.price) : acquisitionSort === 'price_asc' ? priceValue(a.price) - priceValue(b.price) : (b.createdAt || '').localeCompare(a.createdAt || ''));
-    }, [propertyLeads, acquisitionFilter, acquisitionSearch, acquisitionSourceFilter, acquisitionAssigneeFilter, privateOnly, attentionOnly, incompleteOnly, acquisitionSort]);
-    const hasActiveAcquisitionFilters = acquisitionFilter !== 'all' || Boolean(acquisitionSearch.trim()) || acquisitionSourceFilter !== 'all' || acquisitionAssigneeFilter !== 'all' || privateOnly || attentionOnly || incompleteOnly;
+    }, [propertyLeads, acquisitionFilter, acquisitionSearch, acquisitionSourceFilter, acquisitionAssigneeFilter, privateOnly, attentionOnly, incompleteOnly, acquisitionSort, callTodayOnly, callQueueIds]);
+    const hasActiveAcquisitionFilters = acquisitionFilter !== 'all' || Boolean(acquisitionSearch.trim()) || acquisitionSourceFilter !== 'all' || acquisitionAssigneeFilter !== 'all' || privateOnly || attentionOnly || incompleteOnly || callTodayOnly;
     const clearAcquisitionFilters = () => {
         setAcquisitionFilter('all');
         setAcquisitionSearch('');
@@ -652,6 +671,7 @@ export const AdminDashboard = () => {
         setPrivateOnly(false);
         setAttentionOnly(false);
         setIncompleteOnly(false);
+        setCallTodayOnly(false);
     };
     const [deletingPropertyLead, setDeletingPropertyLead] = useState<string | null>(null);
     const [viewingPropertyLead, setViewingPropertyLead] = useState<PropertyLead | null>(null);
@@ -675,7 +695,23 @@ export const AdminDashboard = () => {
         }
     };
 
+    const consentForProperty = (propertyId: number) => {
+        const property = properties.find((item) => item.id === propertyId) as (typeof properties[number] & { ownerConsentId?: string; acquisitionListingId?: string; sourceAcquisitionId?: string }) | undefined;
+        if (!property) return null;
+        if (property.ownerConsentId && ownerConsentsById[property.ownerConsentId]) return ownerConsentsById[property.ownerConsentId];
+        const listingId = property.acquisitionListingId || property.sourceAcquisitionId;
+        const lead = propertyLeads.find((item) => item.id === listingId || item.draftPropertyId === propertyId || item.activePropertyId === propertyId);
+        return lead ? consentForLead(lead, ownerConsentsById) : Object.values(ownerConsentsById).find((item) => item.acquisitionListingId === listingId) || null;
+    };
+
     const togglePropertyPublication = async (propertyId: number, isPublished: boolean) => {
+        if (!isPublished) {
+            const reason = publishBlockReason(consentForProperty(propertyId));
+            if (reason) {
+                alert(reason);
+                return;
+            }
+        }
         setUpdatingPropertyStatus(propertyId);
         try {
             await updateDoc(doc(db, 'properties', propertyId.toString()), {
@@ -717,6 +753,13 @@ export const AdminDashboard = () => {
         }, (error) => {
             console.error('Błąd odczytu zgód właścicieli:', error);
         });
+        return unsubscribe;
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'ownerLeads'), (snapshot) => {
+            setOwnerLeadCount(snapshot.size);
+        }, () => setOwnerLeadCount(0));
         return unsubscribe;
     }, []);
 
@@ -1111,6 +1154,66 @@ export const AdminDashboard = () => {
         return { token, link: buildConsentLink(token), reused: false };
     };
 
+    const openCallFromQueue = (id: string) => {
+        const lead = propertyLeads.find((item) => item.id === id);
+        if (!lead) return;
+        setCallTodayOnly(true);
+        setActiveTab('acquisition');
+        setViewingPropertyLead(lead);
+    };
+
+    useEffect(() => {
+        propertyLeads.forEach((lead) => {
+            const consent = consentForLead(lead, ownerConsentsById);
+            if (!shouldCreateConsentDraft(lead, consent) || !consent?.id || consentDraftInFlight.current.has(lead.id)) return;
+            consentDraftInFlight.current.add(lead.id);
+            void (async () => {
+                const propertyId = Date.now() + Math.floor(Math.random() * 1000);
+                let created = false;
+                try {
+                    const draft = lead.propertyDraft;
+                    const now = new Date().toISOString();
+                    const price = draft?.price || Number((lead.price || '').replace(/[^\d]/g, '')) || 0;
+                    const title = draft?.title || lead.title || 'Szkic oferty';
+                    await setDoc(doc(db, 'properties', propertyId.toString()), {
+                        id: propertyId,
+                        title,
+                        price,
+                        location: draft?.location || lead.location || '',
+                        beds: draft?.beds || lead.rooms || 0,
+                        baths: draft?.baths || 0,
+                        sqft: draft?.sqft || lead.areaM2 || 0,
+                        type: draft?.type || 'mieszkanie',
+                        status: draft?.status || 'sprzedaz',
+                        description: draft?.description || lead.note || '',
+                        features: draft?.features || [],
+                        image: draft?.image || '',
+                        images: draft?.images || [],
+                        featured: false,
+                        published: false,
+                        agent: draft?.agent || { name: lead.assignee || 'Tomasz Gnat', phone: '', email: 'hello@domizhomes.com', image: '' },
+                        acquisitionListingId: lead.id,
+                        ownerConsentId: consent.id,
+                        sourceAcquisitionId: lead.id,
+                        sourceListingUrl: lead.url || '',
+                        createdAt: now,
+                        updatedAt: now,
+                    });
+                    created = true;
+                    const stage = stageAfterConfirmedConsent(lead.stage) as AcquisitionStage;
+                    const stageHistory = [...(lead.stageHistory || []), makeStageHistory(stage, 'Po potwierdzonej zgodzie na stronę powstał szkic oferty. Etap nie jest jeszcze „umowa podpisana”.')];
+                    const updates = { draftPropertyId: propertyId, stage, stageHistory, updatedAt: now };
+                    await updateDoc(doc(db, 'acquisitionListings', lead.id), updates);
+                    patchPropertyLead(lead.id, updates);
+                } catch (error) {
+                    if (created) await deleteDoc(doc(db, 'properties', propertyId.toString())).catch(() => undefined);
+                    consentDraftInFlight.current.delete(lead.id);
+                    console.error('Nie udało się utworzyć szkicu oferty po zgodzie:', error);
+                }
+            })();
+        });
+    }, [propertyLeads, ownerConsentsById]);
+
     const setPropertyLeadStage = async (id: string, stage: AcquisitionStage) => {
         const current = propertyLeads.find((item) => item.id === id);
         if (!current || (current.stage || 'new') === stage) return;
@@ -1293,6 +1396,7 @@ export const AdminDashboard = () => {
             audit: [{ title: 'Wykonać audyt ogłoszenia', offset: 0 }, { title: 'Przygotować najważniejsze argumenty do kontaktu', offset: 1 }],
             ready_to_call: [{ title: 'Zadzwonić do właściciela', offset: 0 }, { title: 'Wysłać krótkie podsumowanie po rozmowie', offset: 1 }, { title: 'Wykonać follow-up po pierwszym kontakcie', offset: 3 }],
             contacted: [{ title: 'Ustalić termin rozmowy lub spotkania', offset: 1 }, { title: 'Zadzwonić ponownie do właściciela', offset: 3 }],
+            consent_draft: [{ title: 'Uzupełnić szkic oferty', offset: 0 }, { title: 'Sprawdzić zgodę na stronę przed publikacją', offset: 1 }],
             meeting: [{ title: 'Przygotować spotkanie i audyt oferty', offset: 0 }, { title: 'Wysłać ofertę współpracy po spotkaniu', offset: 1 }],
             proposal: [{ title: 'Potwierdzić decyzję właściciela', offset: 1 }],
             acquired: [{ title: 'Dopilnować przygotowania aktywnej oferty', offset: 0 }],
@@ -1905,6 +2009,10 @@ export const AdminDashboard = () => {
             const compactDescription = finalDescription.replace(/\s+/g, ' ').trim();
             const seoTitle = `${finalTitle} | Domiz Homes`.slice(0, 60);
             const seoDescription = (compactDescription || `${draft.type} — ${draft.location}`).slice(0, 160);
+            const consent = consentForLead(item, ownerConsentsById);
+            const publishReason = publishBlockReason(consent);
+            const canPublishNow = conversionOptions.publishNow && !publishReason;
+            if (conversionOptions.publishNow && publishReason) alert(publishReason);
             const propertyPayload = {
                 ...draft,
                 id: propertyId,
@@ -1915,7 +2023,9 @@ export const AdminDashboard = () => {
                 image: imageCandidates[0] || '',
                 images: imageCandidates.slice(1),
                 agent: { ...draft.agent, name: item.assignee || draft.agent.name },
-                published: conversionOptions.publishNow,
+                published: canPublishNow,
+                ownerConsentId: consent?.id || item.ownerConsentId || '',
+                acquisitionListingId: item.id,
                 seoTitle,
                 seoDescription,
                 seoKeywords: [draft.type, draft.location, finalTitle, 'Domiz Homes'].filter(Boolean).join(', '),
@@ -1930,13 +2040,14 @@ export const AdminDashboard = () => {
                 ...(englishShowcase ? { titleEn: englishShowcase.title, descriptionEn: englishShowcase.description, featuresEn: englishShowcase.highlights } : {}),
             };
             await setDoc(doc(db, 'properties', propertyId.toString()), propertyPayload, { merge: updatingExisting });
-            const stageHistory = updatingExisting ? [...(item.stageHistory || []), makeStageHistory('acquired', 'Zaktualizowano ofertę na stronie na podstawie najnowszego audytu.')] : item.stage === 'acquired' ? item.stageHistory || [] : [...(item.stageHistory || []), makeStageHistory('acquired', 'Utworzono aktywną ofertę.')];
-            const updates = { activePropertyId: propertyId, convertedAt: now, stage: 'acquired' as AcquisitionStage, stageHistory, updatedAt: now };
+            const nextStage: AcquisitionStage = item.stage === 'acquired' || item.stage === 'rejected' ? item.stage : 'consent_draft';
+            const stageHistory = [...(item.stageHistory || []), makeStageHistory(nextStage, canPublishNow ? 'Oferta opublikowana po zgodzie na stronę.' : 'Utworzono szkic oferty. Etap nie przechodzi od razu na „umowa podpisana”.')];
+            const updates = { activePropertyId: propertyId, draftPropertyId: item.draftPropertyId || propertyId, convertedAt: now, stage: nextStage, stageHistory, updatedAt: now };
             await updateDoc(doc(db, 'acquisitionListings', item.id), updates);
             setPropertyLeads((previous) => previous.map((lead) => lead.id === item.id ? { ...lead, ...updates } : lead));
             setViewingPropertyLead((lead) => lead?.id === item.id ? { ...lead, ...updates } : lead);
             setConversionTarget(null);
-            alert(updatingExisting ? 'Oferta na stronie została zaktualizowana na podstawie najnowszej wersji pokazowej.' : conversionOptions.publishNow ? 'Oferta została utworzona i opublikowana na stronie.' : 'Wersja robocza została utworzona. Uzupełnij ją i opublikuj w formularzu edycji.');
+            alert(updatingExisting ? 'Oferta na stronie została zaktualizowana. Bez zgody na stronę zostaje szkicem.' : canPublishNow ? 'Oferta została opublikowana, bo jest zgoda na stronę.' : 'Szkic oferty został utworzony. Publikacja czeka na zgodę właściciela na stronę.');
             navigate(`/admin/properties/${propertyId}/edit`);
         } catch (error) {
             console.error('Błąd konwersji do aktywnej oferty:', error);
@@ -2339,6 +2450,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
         audit: 'Zapisz 3–5 konkretnych problemów ogłoszenia: zdjęcia, opis, cena, ekspozycja, grupa docelowa.',
         ready_to_call: 'Przygotuj merytoryczny audyt i hipotezę planu naprawczego. Nie oceniaj pośrednika.',
         contacted: 'Poznaj cel właściciela, historię sprzedaży, obecną umowę i termin możliwej współpracy.',
+        consent_draft: 'Szkic oferty jest niewidoczny. Publikacja czeka na zgodę na stronę.',
         meeting: 'Pokaż audyt oraz plan: wizualizacje, pozycjonowanie, grupa docelowa, harmonogram i technologia.',
         proposal: 'Ustal zakres, warunki oraz datę decyzji. Zapisz następny krok i termin follow-upu.',
         acquired: 'Przenieś dane do aktywnej oferty i uruchom plan marketingowy.',
@@ -2512,174 +2624,35 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 </div>
             )}
 
-            <div className="admin-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '1rem' }}>
-                <button
-                    aria-pressed={activeTab === 'dashboard'}
-                    onClick={() => setActiveTab('dashboard')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'dashboard' ? '1px solid #1d4ed8' : '1px solid var(--color-border)',
-                        background: activeTab === 'dashboard' ? 'rgba(37,99,235,0.12)' : 'white',
-                        color: activeTab === 'dashboard' ? '#1d4ed8' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Wyniki
-                </button>
-                <button
-                    aria-pressed={activeTab === 'offers'}
-                    onClick={() => setActiveTab('offers')}
-                    style={{
-                        padding: '0.5rem 1rem',
-                        borderRadius: '9999px',
-                        border: activeTab === 'offers' ? '1px solid #10b981' : '1px solid var(--color-border)',
-                        background: activeTab === 'offers' ? 'rgba(16,185,129,0.12)' : 'white',
-                        color: activeTab === 'offers' ? '#047857' : 'var(--color-text-main)',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                    }}
-                >
-                    Oferty ({properties.length})
-                </button>
-                <button
-                    aria-pressed={activeTab === 'leads'}
-                    onClick={() => setActiveTab('leads')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'leads' ? '1px solid #2563eb' : '1px solid var(--color-border)',
-                        background: activeTab === 'leads' ? 'rgba(37,99,235,0.12)' : 'white',
-                        color: activeTab === 'leads' ? '#1d4ed8' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Zgłoszenia ({inquiries.length})
-                </button>
-                <button
-                    aria-pressed={activeTab === 'acquisition'}
-                    onClick={() => setActiveTab('acquisition')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'acquisition' ? '1px solid #f59e0b' : '1px solid var(--color-border)',
-                        background: activeTab === 'acquisition' ? 'rgba(245,158,11,0.12)' : 'white',
-                        color: activeTab === 'acquisition' ? '#b45309' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Pozyskiwanie ofert ({propertyLeads.length})
-                </button>
-                <button
-                    aria-pressed={activeTab === 'estates'}
-                    onClick={() => setActiveTab('estates')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'estates' ? '1px solid #0f766e' : '1px solid var(--color-border)',
-                        background: activeTab === 'estates' ? 'rgba(13,148,136,0.12)' : 'white',
-                        color: activeTab === 'estates' ? '#0f766e' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Osiedla
-                </button>
-                <button
-                    aria-pressed={activeTab === 'presentation' && presentationMode !== 'audit'}
-                    onClick={() => { setPresentationMode('agency'); setActiveTab('presentation'); }}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'presentation' && presentationMode !== 'audit' ? '1px solid #2563eb' : '1px solid var(--color-border)',
-                        background: activeTab === 'presentation' && presentationMode !== 'audit' ? 'rgba(37,99,235,0.12)' : 'white',
-                        color: activeTab === 'presentation' && presentationMode !== 'audit' ? '#1d4ed8' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Prezentacje
-                </button>
-                <button
-                    aria-pressed={activeTab === 'presentation' && presentationMode === 'audit'}
-                    onClick={() => { setPresentationMode('audit'); setActiveTab('presentation'); }}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'presentation' && presentationMode === 'audit' ? '1px solid #b45309' : '1px solid var(--color-border)',
-                        background: activeTab === 'presentation' && presentationMode === 'audit' ? 'rgba(245,158,11,0.12)' : 'white',
-                        color: activeTab === 'presentation' && presentationMode === 'audit' ? '#92400e' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Audyty
-                </button>
-                <button
-                    aria-pressed={activeTab === 'proposals'}
-                    onClick={() => setActiveTab('proposals')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'proposals' ? '1px solid #7c3aed' : '1px solid var(--color-border)',
-                        background: activeTab === 'proposals' ? '#f5f3ff' : 'white',
-                        color: activeTab === 'proposals' ? '#6d28d9' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Proposale ({propertyLeads.filter((item) => Boolean(item.generatedProposal)).length})
-                </button>
-                <button
-                    aria-pressed={activeTab === 'agreements'}
-                    onClick={() => setActiveTab('agreements')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'agreements' ? '1px solid #ea580c' : '1px solid var(--color-border)',
-                        background: activeTab === 'agreements' ? '#fff7ed' : 'white',
-                        color: activeTab === 'agreements' ? '#9a3412' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Umowy ({propertyLeads.filter((item) => Boolean(item.generatedAgreement)).length})
-                </button>
-                <button
-                    aria-pressed={activeTab === 'clientAccounts'}
-                    onClick={() => setActiveTab('clientAccounts')}
-                    style={{
-                        padding: '0.5rem 1rem', borderRadius: '9999px',
-                        border: activeTab === 'clientAccounts' ? '1px solid #087653' : '1px solid var(--color-border)',
-                        background: activeTab === 'clientAccounts' ? '#e8f8f0' : 'white',
-                        color: activeTab === 'clientAccounts' ? '#087653' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600,
-                    }}
-                >
-                    Konta klientów
-                </button>
-                <a href="/admin/wlasciciele">Właściciele do kontaktu</a>
-                <a href="/admin/kawalerki">Mieszkania z ogródkiem – Warszawa</a>
-                <a href="/admin/zgody">Zgody</a>
-                <button
-                    aria-pressed={activeTab === 'settings'}
-                    onClick={() => setActiveTab('settings')}
-                    style={{
-                        padding: '0.5rem 1rem',
-                        borderRadius: '9999px',
-                        border: activeTab === 'settings' ? '1px solid #8b5cf6' : '1px solid var(--color-border)',
-                        background: activeTab === 'settings' ? 'rgba(139,92,246,0.12)' : 'white',
-                        color: activeTab === 'settings' ? '#6d28d9' : 'var(--color-text-main)',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                    }}
-                >
-                    Ustawienia SEO & AI
-                </button>
-                <button
-                    aria-pressed={activeTab === 'videos'}
-                    onClick={() => setActiveTab('videos')}
-                    className={activeTab === 'videos' ? 'admin-tab-video is-active' : 'admin-tab-video'}
-                >
-                    Studio filmów AI
-                </button>
-            </div>
+            <AdminTabBar
+                activeTab={activeTab}
+                presentationMode={presentationMode}
+                counts={{ offers: properties.length, leads: inquiries.length, acquisition: propertyLeads.length, proposals: propertyLeads.filter((item) => Boolean(item.generatedProposal)).length, agreements: propertyLeads.filter((item) => Boolean(item.generatedAgreement)).length }}
+                ownerLeadCount={ownerLeadCount}
+                moreOpen={moreTabsOpen}
+                onToggleMore={() => setMoreTabsOpen((open) => !open)}
+                onTab={(tab) => { setMoreTabsOpen(false); setActiveTab(tab); }}
+                onPresentation={(mode) => { setMoreTabsOpen(false); setPresentationMode(mode); setActiveTab('presentation'); }}
+            />
 
             {activeTab === 'dashboard' && (() => {
                 const total = propertyLeads.length;
                 const acquired = propertyLeads.filter((item) => item.stage === 'acquired').length;
                 const audited = propertyLeads.filter((item) => Boolean(item.auditSummary)).length;
-                const ready = propertyLeads.filter((item) => item.stage === 'ready_to_call').length;
+                const ready = callQueue.filter((row) => row.kind === 'call').length;
                 const today = new Date().toISOString().slice(0, 10);
                 const overdueTasks = propertyLeads.flatMap((item) => (item.tasks || []).filter((task) => task.status === 'open' && task.dueDate < today).map((task) => ({ item, task })));
                 const todayTasks = propertyLeads.flatMap((item) => (item.tasks || []).filter((task) => task.status === 'open' && task.dueDate === today).map((task) => ({ item, task })));
                 const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
                 const recentActivities = propertyLeads.flatMap((item) => (item.activities || []).filter((activity) => new Date(activity.createdAt).getTime() >= sevenDaysAgo));
                 const ownerSummary = Object.entries(propertyLeads.reduce<Record<string, { total: number; ready: number; acquired: number; overdue: number }>>((summary, item) => { const owner = item.assignee?.trim() || 'Bez opiekuna'; const current = summary[owner] || { total: 0, ready: 0, acquired: 0, overdue: 0 }; current.total += 1; current.ready += item.stage === 'ready_to_call' ? 1 : 0; current.acquired += item.stage === 'acquired' ? 1 : 0; current.overdue += (item.tasks || []).filter((task) => task.status === 'open' && task.dueDate < today).length; summary[owner] = current; return summary; }, {})).sort(([, a], [, b]) => b.total - a.total);
-                const metrics = [['Wszystkie pozyski', total, '#1d4ed8', '#eff6ff'], ['Audyty wykonane', audited, '#6d28d9', '#f5f3ff'], ['Gotowe do kontaktu', ready, '#b45309', '#fffbeb'], ['Aktywne oferty', acquired, '#047857', '#ecfdf5'], ['Konwersja', total ? `${Math.round((acquired / total) * 100)}%` : '0%', '#0f766e', '#f0fdfa'], ['Zadania po terminie', overdueTasks.length, '#b91c1c', '#fef2f2'], ...ACQUISITION_STAGES.map((stage) => [stage.label, `${propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length}${total ? ` · ${Math.round((propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length / total) * 100)}%` : ''}`, stage.color, stage.background])];
-                return <div className="glass-panel" style={{ padding: '1.25rem' }}><div><h2 style={{ margin: 0 }}>Wyniki pozyskiwania</h2><p style={{ margin: '0.35rem 0 1.25rem', color: 'var(--color-text-muted)' }}>Obraz pracy zespołu i najważniejszych kolejnych działań.</p></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '0.7rem' }}>{metrics.map(([label, value, color, background]) => <div key={label as string} style={{ padding: '0.85rem', borderRadius: '0.65rem', background: background as string, color: color as string }}><div style={{ fontSize: '0.78rem' }}>{label}</div><div style={{ fontWeight: 800, fontSize: '1.45rem', marginTop: '0.25rem' }}>{value}</div></div>)}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '0.85rem', marginTop: '1rem' }}><section style={{ padding: '1rem', border: '1px solid #fecaca', borderRadius: '0.65rem', background: '#fffafa' }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#b91c1c' }}>Pilne zadania ({overdueTasks.length})</h3>{overdueTasks.length ? <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem' }}>{overdueTasks.map(({ item, task }) => <button key={task.id} type="button" onClick={() => { setActiveTab('acquisition'); setViewingPropertyLead(item); }} style={{ textAlign: 'left', padding: '0.55rem', background: 'white', border: '1px solid #fecaca', borderRadius: '0.4rem', cursor: 'pointer' }}><strong>{task.title}</strong><div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', marginTop: '0.15rem' }}>{item.title} · termin: {task.dueDate}</div></button>)}</div> : <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>Brak zadań po terminie.</p>}</section><section style={{ padding: '1rem', border: '1px solid #bfdbfe', borderRadius: '0.65rem', background: '#f8fbff' }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#1d4ed8' }}>Aktywność i dzisiejsze zadania</h3><div style={{ marginTop: '0.7rem', display: 'grid', gap: '0.35rem', fontSize: '0.9rem' }}><div><strong>{todayTasks.length}</strong> zadań na dziś</div><div><strong>{recentActivities.length}</strong> wpisów kontaktowych z ostatnich 7 dni</div><button type="button" onClick={() => setActiveTab('acquisition')} style={{ marginTop: '0.4rem', width: 'fit-content', padding: '0.4rem 0.55rem', border: '1px solid #bfdbfe', borderRadius: '0.4rem', color: '#1d4ed8', background: 'white', cursor: 'pointer', fontWeight: 700 }}>Otwórz pozyski</button></div></section></div><section style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.65rem', background: '#fff' }}><h3 style={{ margin: 0, fontSize: '1rem' }}>Portfele opiekunów</h3><p style={{ margin: '0.3rem 0 0.7rem', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>Kliknij osobę, aby przejść do jej pozysków.</p>{ownerSummary.length ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.6rem' }}>{ownerSummary.map(([owner, summary]) => <button key={owner} type="button" onClick={() => { setAcquisitionSearch(owner === 'Bez opiekuna' ? '' : owner); setActiveTab('acquisition'); }} style={{ textAlign: 'left', padding: '0.7rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', background: '#f8fafc', cursor: 'pointer' }}><div style={{ fontWeight: 800 }}>{owner}</div><div style={{ marginTop: '0.3rem', color: '#475569', fontSize: '0.78rem' }}><strong>{summary.total}</strong> pozysków · {summary.ready} do kontaktu · {summary.acquired} pozyskanych</div>{summary.overdue > 0 && <div style={{ marginTop: '0.3rem', color: '#b91c1c', fontSize: '0.76rem', fontWeight: 700 }}>{summary.overdue} zadań po terminie</div>}</button>)}</div> : <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Przypisz opiekuna w edycji pozysku, aby zobaczyć podział pracy.</div>}</section></div>;
+                const metrics = [['Wszystkie pozyski', total, '#1d4ed8', '#eff6ff'], ['Audyty wykonane', audited, '#6d28d9', '#f5f3ff'], ['Do telefonu', ready, '#b45309', '#fffbeb'], ['Aktywne oferty', acquired, '#047857', '#ecfdf5'], ['Konwersja', total ? `${Math.round((acquired / total) * 100)}%` : '0%', '#0f766e', '#f0fdfa'], ['Zadania po terminie', overdueTasks.length, '#b91c1c', '#fef2f2'], ...ACQUISITION_STAGES.map((stage) => [stage.label, `${propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length}${total ? ` · ${Math.round((propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length / total) * 100)}%` : ''}`, stage.color, stage.background])];
+                return <div className="glass-panel" style={{ padding: '1.25rem' }}><CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} /><div><h2 style={{ margin: 0 }}>Wyniki pozyskiwania</h2><p style={{ margin: '0.35rem 0 1.25rem', color: 'var(--color-text-muted)' }}>Obraz pracy zespołu i najważniejszych kolejnych działań.</p></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '0.7rem' }}>{metrics.map(([label, value, color, background]) => <div key={label as string} style={{ padding: '0.85rem', borderRadius: '0.65rem', background: background as string, color: color as string }}><div style={{ fontSize: '0.78rem' }}>{label}</div><div style={{ fontWeight: 800, fontSize: '1.45rem', marginTop: '0.25rem' }}>{value}</div></div>)}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '0.85rem', marginTop: '1rem' }}><section style={{ padding: '1rem', border: '1px solid #fecaca', borderRadius: '0.65rem', background: '#fffafa' }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#b91c1c' }}>Pilne zadania ({overdueTasks.length})</h3>{overdueTasks.length ? <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem' }}>{overdueTasks.map(({ item, task }) => <button key={task.id} type="button" onClick={() => { setActiveTab('acquisition'); setViewingPropertyLead(item); }} style={{ textAlign: 'left', padding: '0.55rem', background: 'white', border: '1px solid #fecaca', borderRadius: '0.4rem', cursor: 'pointer' }}><strong>{task.title}</strong><div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', marginTop: '0.15rem' }}>{item.title} · termin: {task.dueDate}</div></button>)}</div> : <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>Brak zadań po terminie.</p>}</section><section style={{ padding: '1rem', border: '1px solid #bfdbfe', borderRadius: '0.65rem', background: '#f8fbff' }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#1d4ed8' }}>Aktywność i dzisiejsze zadania</h3><div style={{ marginTop: '0.7rem', display: 'grid', gap: '0.35rem', fontSize: '0.9rem' }}><div><strong>{todayTasks.length}</strong> zadań na dziś</div><div><strong>{recentActivities.length}</strong> wpisów kontaktowych z ostatnich 7 dni</div><button type="button" onClick={() => setActiveTab('acquisition')} style={{ marginTop: '0.4rem', width: 'fit-content', padding: '0.4rem 0.55rem', border: '1px solid #bfdbfe', borderRadius: '0.4rem', color: '#1d4ed8', background: 'white', cursor: 'pointer', fontWeight: 700 }}>Otwórz pozyski</button></div></section></div><section style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.65rem', background: '#fff' }}><h3 style={{ margin: 0, fontSize: '1rem' }}>Portfele opiekunów</h3><p style={{ margin: '0.3rem 0 0.7rem', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>Kliknij osobę, aby przejść do jej pozysków.</p>{ownerSummary.length ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.6rem' }}>{ownerSummary.map(([owner, summary]) => <button key={owner} type="button" onClick={() => { setAcquisitionSearch(owner === 'Bez opiekuna' ? '' : owner); setActiveTab('acquisition'); }} style={{ textAlign: 'left', padding: '0.7rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', background: '#f8fafc', cursor: 'pointer' }}><div style={{ fontWeight: 800 }}>{owner}</div><div style={{ marginTop: '0.3rem', color: '#475569', fontSize: '0.78rem' }}><strong>{summary.total}</strong> pozysków · {summary.ready} do kontaktu · {summary.acquired} pozyskanych</div>{summary.overdue > 0 && <div style={{ marginTop: '0.3rem', color: '#b91c1c', fontSize: '0.76rem', fontWeight: 700 }}>{summary.overdue} zadań po terminie</div>}</button>)}</div> : <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Przypisz opiekuna w edycji pozysku, aby zobaczyć podział pracy.</div>}</section></div>;
             })()}
 
             {activeTab === 'offers' && (
                 <div className="glass-panel admin-offers" style={{ overflowX: 'auto' }}>
+                    <div className="admin-offers__toolbar"><button type="button" aria-pressed={showOldImports} onClick={() => setShowOldImports((value) => !value)}>{showOldImports ? 'Ukryj stare importy' : `Pokaż stare importy (${oldImportCount})`}</button><span>Nieopublikowane importy z biura Bąkowski są schowane. Dokumenty zostają w bazie.</span></div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -2692,7 +2665,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                             </tr>
                         </thead>
                         <tbody>
-                            {properties.map((property) => (
+                            {visibleOffers.map((property) => (
                                 <tr key={property.id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background 0.2s' }}>
                                     <td style={{ padding: '1rem' }}>
                                         <img
@@ -3118,7 +3091,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 <div className="glass-panel acquisition-workspace" style={{ padding: '1.25rem' }}>
                     <style>{'[title="Skopiuj link"], [title="Obserwuj"] { display: none !important; }'}</style>
                     <div className="acquisition-workspace__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                        <div><div className="admin-dashboard__eyebrow">PIPELINE POZYSKANIA</div><h2 style={{ margin: 0, fontSize: '1.2rem' }}>Pozyskiwanie ofert</h2><p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Potencjalne nieruchomości z Otodom, OLX i Facebooka — od analizy ogłoszenia do pozyskania umowy.</p><div className="acquisition-source-filter"><span>Źródło</span><div role="group" aria-label="Źródło pozysku">{(['all', 'Otodom', 'OLX', 'Facebook'] as const).map((source) => <button key={source} type="button" aria-pressed={acquisitionSourceFilter === source} onClick={() => setAcquisitionSourceFilter(source)}>{source === 'all' ? 'Wszystkie' : source}</button>)}</div></div></div>
+                        <div className="acquisition-call-filter"><button type="button" aria-pressed={callTodayOnly} onClick={() => setCallTodayOnly((value) => !value)}>Dzwoń dziś ({callQueue.length})</button></div><CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} /><div><div className="admin-dashboard__eyebrow">PIPELINE POZYSKANIA</div><h2 style={{ margin: 0, fontSize: '1.2rem' }}>Pozyskiwanie ofert</h2><p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Potencjalne nieruchomości z Otodom, OLX i Facebooka — od analizy ogłoszenia do pozyskania umowy.</p><div className="acquisition-source-filter"><span>Źródło</span><div role="group" aria-label="Źródło pozysku">{['all', ...acquisitionSourceOptions].map((source) => <button key={source} type="button" aria-pressed={acquisitionSourceFilter === source} onClick={() => setAcquisitionSourceFilter(source)}>{source === 'all' ? 'Wszystkie' : source}</button>)}</div></div></div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}><div style={{ display: 'flex', padding: '0.2rem', border: '1px solid var(--color-border)', borderRadius: '0.55rem', background: 'white' }}><button type="button" className={acquisitionView === 'list' ? 'admin-segment is-on' : 'admin-segment'} onClick={() => setAcquisitionView('list')}>Lista</button><button type="button" className={acquisitionView === 'board' ? 'admin-segment is-on' : 'admin-segment'} onClick={() => setAcquisitionView('board')}>Proces</button></div><button type="button" onClick={exportAcquisitionsCsv} disabled={!filteredPropertyLeads.length} style={{ padding: '0.5rem 0.65rem', border: '1px solid #bfdbfe', borderRadius: '0.5rem', background: 'white', color: '#1d4ed8', cursor: filteredPropertyLeads.length ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.8rem', opacity: filteredPropertyLeads.length ? 1 : 0.5 }}>Eksport CSV</button><button onClick={() => setIsSourceImportOpen(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Plus size={18} /> Dodaj nowy pozysk</button></div>
                     </div>
                     <div className="acquisition-toolbar" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '1rem' }}><input aria-label="Szukaj pozysków" value={acquisitionSearch} onChange={(event) => setAcquisitionSearch(event.target.value)} placeholder="Szukaj po tytule, adresie lub cenie..." style={{ flex: '1 1 300px', padding: '0.65rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem' }} /><button type="button" aria-pressed={privateOnly} onClick={() => setPrivateOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: privateOnly ? '1px solid #047857' : '1px solid var(--color-border)', background: privateOnly ? '#ecfdf5' : 'white', color: privateOnly ? '#047857' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Tylko prywatne</button><button type="button" aria-pressed={attentionOnly} onClick={() => setAttentionOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: attentionOnly ? '1px solid #b91c1c' : '1px solid var(--color-border)', background: attentionOnly ? '#fef2f2' : 'white', color: attentionOnly ? '#b91c1c' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Wymaga działania</button><button type="button" aria-pressed={incompleteOnly} onClick={() => setIncompleteOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: incompleteOnly ? '1px solid #b45309' : '1px solid var(--color-border)', background: incompleteOnly ? '#fffbeb' : 'white', color: incompleteOnly ? '#b45309' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Braki danych</button><select aria-label="Filtr opiekuna" value={acquisitionAssigneeFilter} onChange={(event) => setAcquisitionAssigneeFilter(event.target.value as typeof acquisitionAssigneeFilter)} style={{ padding: '0.65rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem', background: 'white', color: 'var(--color-text-main)', cursor: 'pointer' }}><option value="all">Wszyscy opiekunowie</option><option value="unassigned">Bez opiekuna</option>{PROPERTY_CARETAKERS.map((caretaker) => <option key={caretaker} value={caretaker}>{caretaker}</option>)}</select><select aria-label="Sortowanie pozysków" value={acquisitionSort} onChange={(event) => setAcquisitionSort(event.target.value as typeof acquisitionSort)} style={{ padding: '0.65rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem', background: 'white', color: 'var(--color-text-main)', cursor: 'pointer' }}><option value="newest">Najnowsze</option><option value="deadline">Najbliższy termin</option><option value="price_desc">Cena: malejąco</option><option value="price_asc">Cena: rosnąco</option></select></div>
@@ -3417,6 +3390,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 onClose={() => setConversionTarget(null)}
                 onConfirm={() => void createActiveProperty(conversionTarget)}
                 isCreating={convertingPropertyLead === conversionTarget.id}
+                publishConsentReason={publishBlockReason(consentForLead(conversionTarget, ownerConsentsById))}
             />}
             {activeTab === 'estates' && (() => {
                 const estateName = (item: PropertyLead) => {
@@ -3603,9 +3577,10 @@ interface PropertyPublishDialogProps {
     onClose: () => void;
     onConfirm: () => void;
     isCreating: boolean;
+    publishConsentReason: string | null;
 }
 
-function PropertyPublishDialog({ listing, options, onOptionsChange, onClose, onConfirm, isCreating }: PropertyPublishDialogProps) {
+function PropertyPublishDialog({ listing, options, onOptionsChange, onClose, onConfirm, isCreating, publishConsentReason }: PropertyPublishDialogProps) {
     const draft = listing.propertyDraft;
     if (!draft) return null;
     const audit = listing.auditTranslations?.pl?.auditData || listing.auditData;
@@ -3629,8 +3604,9 @@ function PropertyPublishDialog({ listing, options, onOptionsChange, onClose, onC
             <div className="property-publish-dialog__summary"><div><small>Tytuł</small><strong>{showcase?.title || draft.title}</strong></div><div><small>Zdjęcia</small><strong>{imageCount || 'Brak'}</strong></div><div><small>Języki</small><strong>{englishReady ? 'PL + EN' : 'PL'}</strong></div></div>
             {listing.activePropertyId && <fieldset><legend>Powiązana oferta na stronie</legend><button type="button" aria-pressed={options.propertyMode === 'update'} onClick={() => onOptionsChange({ ...options, propertyMode: 'update' })}><span>Zaktualizuj istniejącą</span><strong>Bez tworzenia duplikatu</strong></button><button type="button" aria-pressed={options.propertyMode === 'new'} onClick={() => onOptionsChange({ ...options, propertyMode: 'new' })}><span>Utwórz nową wersję</span><strong>Oddzielna oferta na stronie</strong></button></fieldset>}
             <fieldset><legend>Cena na stronie</legend><button type="button" aria-pressed={options.priceMode === 'audit'} disabled={!auditPrice} onClick={() => onOptionsChange({ ...options, priceMode: 'audit' })}><span>Rekomendacja audytu</span><strong>{auditPrice ? `${auditPrice.toLocaleString('pl-PL')} zł` : 'Brak estymacji'}</strong></button><button type="button" aria-pressed={options.priceMode === 'current'} disabled={!draft.price} onClick={() => onOptionsChange({ ...options, priceMode: 'current' })}><span>Obecna cena</span><strong>{draft.price ? `${draft.price.toLocaleString('pl-PL')} zł` : 'Brak ceny'}</strong></button></fieldset>
-            <fieldset><legend>Sposób utworzenia</legend><button type="button" aria-pressed={!options.publishNow} onClick={() => onOptionsChange({ ...options, publishNow: false })}><span>Wersja robocza</span><strong>Najpierw końcowa edycja</strong></button><button type="button" aria-pressed={options.publishNow} disabled={!readyToPublish} onClick={() => onOptionsChange({ ...options, publishNow: true })}><span>Opublikuj od razu</span><strong>{readyToPublish ? 'Widoczna dla klientów' : 'Uzupełnij wymagane dane'}</strong></button></fieldset>
+            <fieldset><legend>Sposób utworzenia</legend><button type="button" aria-pressed={!options.publishNow} onClick={() => onOptionsChange({ ...options, publishNow: false })}><span>Wersja robocza</span><strong>Najpierw końcowa edycja</strong></button><button type="button" aria-pressed={options.publishNow} disabled={!readyToPublish || Boolean(publishConsentReason)} onClick={() => onOptionsChange({ ...options, publishNow: true })}><span>Opublikuj od razu</span><strong>{publishConsentReason ? 'Najpierw zgoda na stronę' : readyToPublish ? 'Widoczna dla klientów' : 'Uzupełnij wymagane dane'}</strong></button></fieldset>
             <div className="property-publish-dialog__checklist"><h3>Kontrola kompletności</h3><div>{checks.map(([label, ready]) => <span key={label} className={ready ? 'is-ready' : ''}><i>{ready ? '✓' : '!'}</i>{label}</span>)}</div></div>
+            {publishConsentReason && <p className="property-publish-dialog__warning">{publishConsentReason} Szkic można zapisać. Publikacja (widoczna na stronie) jest zablokowana.</p>}
             {options.publishNow && !readyToPublish && <p className="property-publish-dialog__warning">Publikacja wymaga tytułu, lokalizacji, ceny, metrażu i co najmniej jednego zdjęcia. Możesz utworzyć wersję roboczą i uzupełnić te dane później.</p>}
             <footer><button type="button" onClick={onClose} disabled={isCreating}>Anuluj</button><button type="button" className="is-primary" onClick={onConfirm} disabled={isCreating || options.publishNow && !readyToPublish}>{isCreating ? 'Zapisuję ofertę…' : options.propertyMode === 'update' ? options.publishNow ? 'Zaktualizuj i opublikuj' : 'Zaktualizuj ofertę' : options.publishNow ? 'Utwórz i opublikuj' : 'Utwórz wersję roboczą'}</button></footer>
         </section>
