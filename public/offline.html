@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111113" />
+  <title>Domiz Homes CRM — offline</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f5f5f7; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(440px, 100%); padding: 28px; border: 1px solid rgba(0,0,0,.08); border-radius: 24px; background: #fff; box-shadow: 0 18px 50px rgba(0,0,0,.08); text-align: center; }
+    img { width: 72px; height: 72px; border-radius: 18px; }
+    h1 { margin: 18px 0 8px; font-size: 24px; letter-spacing: -.04em; }
+    p { margin: 0; color: #6e6e73; line-height: 1.55; }
+    button { min-height: 46px; margin-top: 22px; padding: 0 18px; border: 0; border-radius: 999px; background: #1d1d1f; color: #fff; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/pwa/icon-192.png" alt="Domiz Homes" />
+    <h1>Brak połączenia</h1>
+    <p>Panel wymaga internetu do synchronizacji danych. Sprawdź połączenie i spróbuj ponownie.</p>
+    <button onclick="window.location.reload()">Spróbuj ponownie</button>
+  </main>
+</body>
+</html>

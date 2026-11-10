@@ -6,6 +6,8 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { Search, SlidersHorizontal, Grid, List, X } from 'lucide-react';
 import { trackEvent } from '../utils/analytics';
 import { useLanguage } from '../context/useLanguage';
+import agentPhoto from '../assets/tomaszgnat.jpeg';
+import { getLocalizedProperty } from '../data/propertyLocalization';
 
 
 
@@ -67,7 +69,9 @@ export function Properties() {
     }, [searchQuery, propertyType, priceRange, searchParams, setSearchParams]);
 
     const filteredProperties = properties.filter(property => {
-        const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const localized = getLocalizedProperty(property, language);
+        const matchesSearch = localized.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            localized.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
             property.location.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = propertyType === 'wszystkie' || property.type === propertyType;
         const matchesStatus = propertyStatus === 'wszystkie' || property.status === propertyStatus;
@@ -391,6 +395,24 @@ export function Properties() {
                             ))}
                         </div>
                     )}
+
+                    <section className="agents-section" aria-labelledby="agents-heading">
+                        <div className="agents-section__intro">
+                            <span className="agents-section__eyebrow">DOMIZ HOMES</span>
+                            <h2 id="agents-heading">Nasi agenci</h2>
+                            <p>Pomagamy przejść przez zakup lub sprzedaż nieruchomości spokojnie, konkretnie i w dobrym tempie.</p>
+                        </div>
+                        <div className="agents-section__grid">
+                            <article className="agent-card">
+                                <img className="agent-card__photo" src={agentPhoto} alt="Tomasz Gnat" />
+                                <div className="agent-card__content">
+                                    <p className="agent-card__role">Agent nieruchomości</p>
+                                    <h3>Tomasz Gnat</h3>
+                                    <a href="tel:+48517303400" className="agent-card__link">+48 517 303 400</a>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
                 </div>
             </section>
         </div>

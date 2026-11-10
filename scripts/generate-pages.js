@@ -11,31 +11,31 @@ const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
 const STATIC_PAGES = [
     {
         path: '/',
-        title: 'Domiz Homes - Biuro Nieruchomości Tłuszcz, Wołomin',
-        description: 'Szukasz domu lub działki w Tłuszczu? Domiz Homes to Twoje lokalne biuro nieruchomości. Profesjonalna sprzedaż, kupno i wynajem. Sprawdź oferty!',
-        keywords: 'nieruchomości tłuszcz, biuro nieruchomości, domy na sprzedaż tłuszcz, działki tłuszcz, agencja nieruchomości wołomin, domiz homes',
+        title: 'Nieruchomości Śląsk, Mazowsze i Dubaj | Domiz Homes',
+        description: 'Domy i mieszkania na Śląsku, Mazowszu oraz wybrane inwestycje w Dubaju. Sprawdź aktualne oferty i skorzystaj ze wsparcia Domiz Homes przy zakupie lub sprzedaży.',
+        keywords: 'nieruchomości Śląsk, nieruchomości Mazowsze, nieruchomości Dubaj, mieszkania Katowice, domy Tłuszcz, inwestycje Dubaj, Domiz Homes',
         image: DEFAULT_IMAGE,
         priority: '1.0',
     },
     {
         path: '/oferty',
-        title: 'Oferty nieruchomości - domy, mieszkania i działki | Domiz Homes',
-        description: 'Aktualne oferty Domiz Homes: domy, mieszkania i działki na sprzedaż lub wynajem w Tłuszczu, Wołominie i okolicach Warszawy.',
-        keywords: 'oferty nieruchomości, domy na sprzedaż, mieszkania na sprzedaż, działki na sprzedaż, nieruchomości Tłuszcz, nieruchomości Wołomin',
+        title: 'Oferty nieruchomości Śląsk, Mazowsze i Dubaj | Domiz Homes',
+        description: 'Przeglądaj domy i mieszkania na Śląsku, Mazowszu oraz wybrane inwestycje w Dubaju. Aktualne ceny, galerie i szczegółowe opisy.',
+        keywords: 'oferty nieruchomości Śląsk, nieruchomości Mazowsze, nieruchomości Dubaj, mieszkania Katowice, domy na sprzedaż, nieruchomości Tłuszcz, inwestycje Dubaj',
         image: DEFAULT_IMAGE,
         priority: '0.9',
     },
     {
         path: '/kalkulatory',
-        title: 'Kalkulatory kredytu i kosztów budowy domu | Domiz Homes',
-        description: 'Oblicz orientacyjną ratę kredytu hipotecznego i koszt budowy domu. Praktyczne kalkulatory dla kupujących i budujących nieruchomość.',
-        keywords: 'kalkulator kredytu hipotecznego, kalkulator budowy domu, koszt budowy domu, rata kredytu hipotecznego',
+        title: 'Finansowanie nieruchomości z Credipass | Domiz Homes',
+        description: 'Wsparcie w finansowaniu zakupu, budowy i inwestycji w nieruchomości we współpracy z Credipass.',
+        keywords: 'finansowanie nieruchomości, Credipass, kredyt hipoteczny, finansowanie budowy domu, rata kredytu',
         image: DEFAULT_IMAGE,
         priority: '0.7',
     },
     {
         path: '/blog',
-        title: 'Blog o nieruchomościach, zakupie domu i rynku | Domiz Homes',
+        title: 'Blog o nieruchomościach i poradnik kupującego | Domiz Homes',
         description: 'Porady o zakupie domu, rynku nieruchomości, kredycie hipotecznym, inwestowaniu i smart home od Domiz Homes.',
         keywords: 'blog nieruchomości, zakup domu, porady nieruchomości, rynek nieruchomości, kredyt hipoteczny',
         image: DEFAULT_IMAGE,
@@ -43,19 +43,27 @@ const STATIC_PAGES = [
     },
     {
         path: '/osiedle-tluszcz',
-        title: 'Dom pod Warszawą - Osiedle Tłuszcz Sasanka XL z garażem | Domiz Homes',
-        description: 'Szukasz domu pod Warszawą? Osiedle Tłuszcz przy ul. Zaściankowej to kameralne domy Sasanka XL z garażem, ogrodem i dojazdem PKP do Warszawy.',
-        keywords: 'dom pod Warszawą, domy pod Warszawą, dom z garażem pod Warszawą, domy okolice Warszawy, dom Tłuszcz, domy Tłuszcz, Sasanka XL Tłuszcz, dom z ogrodem Mazowieckie, dom powiat wołomiński',
+        title: 'Osiedle Sasankowe Tłuszcz — domy Sasanka XL z garażem | Domiz Homes',
+        description: 'Osiedle Sasankowe Tłuszcz przy ul. Zaściankowej: 5 kameralnych domów Sasanka XL z garażem, ogrodem i dojazdem PKP do Warszawy.',
+        keywords: 'Osiedle Sasankowe, Osiedle Sasankowe Tłuszcz, dom pod Warszawą, domy pod Warszawą, dom z garażem pod Warszawą, dom Tłuszcz, Sasanka XL Tłuszcz, dom z ogrodem Mazowieckie',
         image: `${BASE_URL}/osiedle-tluszcz/og-osiedle-tluszcz.jpg`,
         priority: '0.9',
     },
     {
         path: '/smart-home',
-        title: 'Smart Home - inteligentny dom i automatyka | Domiz Homes',
-        description: 'Systemy smart home dla domów i mieszkań: oświetlenie, ogrzewanie, monitoring, alarmy, zamki elektroniczne i automatyka budynkowa.',
-        keywords: 'smart home, inteligentny dom, automatyka domowa, monitoring domu, inteligentne oświetlenie',
+        title: 'Smart Home Loxone | Domiz Homes',
+        description: 'Domiz Homes jest partnerem Loxone. Pomagamy tworzyć inteligentne domy dopasowane do potrzeb mieszkańców.',
+        keywords: 'Loxone, partner Loxone, smart home, inteligentny dom, automatyka domowa',
         image: DEFAULT_IMAGE,
         priority: '0.6',
+    },
+    {
+        path: '/o-tluszczu',
+        title: 'Przewodnik po Tłuszczu – Zamieszkaj w Tłuszczu | Domiz Homes',
+        description: 'Planujesz kupić dom pod Warszawą? Przeczytaj nasz przewodnik po Tłuszczu. Poznaj czas dojazdu PKP do stolicy, szkoły, sklepy i lokalną infrastrukturę.',
+        keywords: 'Tłuszcz, przewodnik Tłuszcz, dom pod Warszawą, dojazd PKP Tłuszcz, rynek nieruchomości Tłuszcz, zamieszkaj w Tłuszczu',
+        image: DEFAULT_IMAGE,
+        priority: '0.8',
     },
 ];
 
@@ -149,7 +157,7 @@ async function fetchProperties() {
                                 if (field.stringValue) return field.stringValue;
                                 if (field.integerValue) return Number(field.integerValue);
                                 if (field.doubleValue) return Number(field.doubleValue);
-                                if (field.booleanValue) return field.booleanValue;
+                                if (typeof field.booleanValue === 'boolean') return field.booleanValue;
                                 if (field.arrayValue && field.arrayValue.values) {
                                     return field.arrayValue.values.map(v => getValue(v));
                                 }
@@ -163,9 +171,13 @@ async function fetchProperties() {
                                 image: getValue(fields.image) || '',
                                 price: getValue(fields.price) || 0,
                                 location: getValue(fields.location) || '',
-                                // ... inne pola jeśli potrzebne
+                                seoTitle: getValue(fields.seoTitle) || '',
+                                seoDescription: getValue(fields.seoDescription) || '',
+                                seoKeywords: getValue(fields.seoKeywords) || '',
+                                seoSlug: getValue(fields.seoSlug) || '',
+                                published: getValue(fields.published),
                             };
-                        });
+                        }).filter(property => property.published !== false);
                         resolve(properties);
                     } else {
                         resolve([]);
@@ -240,7 +252,7 @@ async function generatePages() {
         },
         {
             question: 'Czy to dobra oferta dla osób szukających domu pod Warszawą?',
-            answer: 'Tak. Osiedle Tłuszcz jest kierowane do osób, które szukają domu pod Warszawą z ogrodem, garażem i spokojniejszą lokalizacją, ale nadal chcą mieć dojazd koleją i dostęp do usług w mieście.'
+            answer: 'Tak. Osiedle Sasankowe Tłuszcz jest kierowane do osób, które szukają domu pod Warszawą z ogrodem, garażem i spokojniejszą lokalizacją, ale nadal chcą mieć dojazd koleją i dostęp do usług w mieście.'
         },
         {
             question: 'Czym różni się dom w Tłuszczu od mieszkania bliżej Warszawy?',
@@ -254,7 +266,7 @@ async function generatePages() {
             {
                 "@type": "Residence",
                 "@id": `${osiedleMeta.url}#residence`,
-                "name": "Osiedle Tłuszcz - domy Sasanka XL z garażem pod Warszawą",
+                "name": "Osiedle Sasankowe Tłuszcz - domy Sasanka XL z garażem pod Warszawą",
                 "description": osiedleMeta.description,
                 "image": [osiedleMeta.image],
                 "url": osiedleMeta.url,
@@ -288,7 +300,7 @@ async function generatePages() {
                 "@id": `${osiedleMeta.url}#breadcrumbs`,
                 "itemListElement": [
                     { "@type": "ListItem", "position": 1, "name": "Domiz Homes", "item": BASE_URL },
-                    { "@type": "ListItem", "position": 2, "name": "Dom pod Warszawą - Osiedle Tłuszcz", "item": osiedleMeta.url }
+                    { "@type": "ListItem", "position": 2, "name": "Osiedle Sasankowe Tłuszcz", "item": osiedleMeta.url }
                 ]
             }
         ]
@@ -304,7 +316,7 @@ async function generatePages() {
     console.log('Generated page for: osiedle-tluszcz');
 
     for (const property of properties) {
-        const slug = createSlug(property.title);
+        const slug = property.seoSlug || createSlug(property.title);
         const urlSlug = `${slug}-${property.id}`;
         const pageDir = path.join(OFFERS_DIR, urlSlug);
 
@@ -312,12 +324,13 @@ async function generatePages() {
             fs.mkdirSync(pageDir, { recursive: true });
         }
 
-        const title = `${property.title} | Domiz Homes`;
-        const description = property.description
+        const title = property.seoTitle || `${property.title} | Domiz Homes`;
+        const description = property.seoDescription || (property.description
             ? `${property.description.substring(0, 157)}...`
-            : `Domiz Homes - Oferta ${property.title}`;
+            : `Domiz Homes - Oferta ${property.title}`);
         const image = property.image || `${BASE_URL}/og-image.png`;
         const url = `${BASE_URL}/oferty/${urlSlug}`;
+        const keywords = property.seoKeywords || "";
 
         urls.push({ url, priority: '0.9' });
 
@@ -344,7 +357,7 @@ async function generatePages() {
     ${JSON.stringify(schema, null, 2)}
     </script>`;
 
-        let html = applyMeta(template, { title, description, image, url });
+        let html = applyMeta(template, { title, description, image, url, keywords });
 
         // Wstrzyknij meta tagi jeśli ich nie ma (fallback)
         if (!html.includes('<meta property="og:title"')) {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ClientPortalRoute } from './components/ClientPortalRoute';
 import { Loader2 } from 'lucide-react';
 import { trackPageView } from './utils/analytics';
 import { getRouteSeo, setSeo } from './utils/seo';
@@ -24,6 +25,9 @@ const Login = lazy(() => import('./pages/admin/Login').then(m => ({ default: m.L
 const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminPropertyForm = lazy(() => import('./pages/admin/AdminPropertyForm').then(m => ({ default: m.AdminPropertyForm })));
+const AboutTL = lazy(() => import('./pages/AboutTL').then(m => ({ default: m.AboutTL })));
+const ClientPortal = lazy(() => import('./pages/ClientPortal').then(m => ({ default: m.ClientPortal })));
+const ClientPortalLogin = lazy(() => import('./pages/ClientPortalLogin').then(m => ({ default: m.ClientPortalLogin })));
 
 function PageFallback() {
     return (
@@ -55,58 +59,64 @@ function RouteSeoManager() {
   return null;
 }
 
+function ScrollToTop() {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    if (!location.hash) window.scrollTo(0, 0);
+  }, [location.pathname, location.hash]);
+
+  return null;
+}
+
+function AppLayout() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isClientPortal = location.pathname.startsWith('/panel-klienta');
+
+  return (
+    <div className={`app${isAdminRoute ? ' app--admin' : ''}`}>
+      <ScrollToTop />
+      <RouteAnalyticsTracker />
+      <RouteSeoManager />
+      {!isAdminRoute && !isClientPortal && <Header />}
+      <main className={isAdminRoute ? 'admin-app-main' : undefined}>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/kalkulatory" element={<Calculators />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/osiedle-tluszcz" element={<OsiedleTluszcz />} />
+            <Route path="/smart-home" element={<SmartHome />} />
+            <Route path="/dodaj-nieruchomosc" element={<AddProperty />} />
+            <Route path="/oferty" element={<Properties />} />
+            <Route path="/oferty/:id" element={<PropertyDetails />} />
+            <Route path="/ulubione" element={<Favorites />} />
+            <Route path="/o-tluszczu" element={<AboutTL />} />
+            <Route path="/panel-klienta/logowanie" element={<ClientPortalLogin />} />
+            <Route path="/panel-klienta" element={<ClientPortalRoute><ClientPortal /></ClientPortalRoute>} />
+            <Route path="/panel-klienta/demo" element={<ClientPortalRoute><ClientPortal /></ClientPortalRoute>} />
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/properties/new" element={<ProtectedRoute><AdminPropertyForm /></ProtectedRoute>} />
+            <Route path="/admin/properties/:id/edit" element={<ProtectedRoute><AdminPropertyForm /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </main>
+      {!isAdminRoute && !isClientPortal && <Footer />}
+    </div>
+  );
+}
+
 function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
         <FavoritesProvider>
-      <Router>
-        <div className="app">
-          <RouteAnalyticsTracker />
-          <RouteSeoManager />
-          <Header />
-          <main>
-            <Suspense fallback={<PageFallback />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/kalkulatory" element={<Calculators />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/osiedle-tluszcz" element={<OsiedleTluszcz />} />
-              <Route path="/smart-home" element={<SmartHome />} />
-              <Route path="/dodaj-nieruchomosc" element={<AddProperty />} />
-              <Route path="/oferty" element={<Properties />} />
-              <Route path="/oferty/:id" element={<PropertyDetails />} />
-              <Route path="/ulubione" element={<Favorites />} />
-
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<Login />} />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/admin/properties/new" element={
-                <ProtectedRoute>
-                  <AdminPropertyForm />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/properties/:id/edit" element={
-                <ProtectedRoute>
-                  <AdminPropertyForm />
-                </ProtectedRoute>
-              } />
-
-              {/* Catch-all Route for 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            </Suspense>
-          </main>
-          <Footer />
-        </div>
-      </Router>
+          <Router>
+            <AppLayout />
+          </Router>
         </FavoritesProvider>
       </AuthProvider>
     </LanguageProvider>

@@ -1,0 +1,48 @@
+{
+  "name": "Domiz Homes CRM",
+  "short_name": "Domiz CRM",
+  "description": "Mobilne centrum pracy agentów Domiz Homes.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#f5f5f7",
+  "theme_color": "#111113",
+  "lang": "pl",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pozyskiwanie ofert",
+      "short_name": "Pozyski",
+      "url": "/admin",
+      "icons": [{ "src": "/pwa/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dodaj ofertę",
+      "short_name": "Nowa oferta",
+      "url": "/admin/properties/new",
+      "icons": [{ "src": "/pwa/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

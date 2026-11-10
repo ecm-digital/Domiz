@@ -1,8 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Home, CreditCard, Info, AlertCircle } from 'lucide-react';
+import { Home, CreditCard, Info, AlertCircle, Handshake } from 'lucide-react';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { trackEvent } from '../utils/analytics';
+import { useLanguage } from '../context/useLanguage';
+
+function EnglishCalculators() {
+    return <div style={{ background: 'var(--color-bg-light)', minHeight: '100vh', paddingTop: '100px' }}>
+        <div className="container" style={{ paddingTop: '1rem' }}><Breadcrumbs items={[{ label: 'Financing' }]} /></div>
+        <section style={{ textAlign: 'center', padding: '2rem 0 3rem' }}><div className="container"><Handshake size={28} style={{ color: '#10b981' }} /><h1>Property financing</h1><p style={{ color: 'var(--color-text-secondary)', maxWidth: 640, margin: '1rem auto' }}>Together with Credipass, we help clients explore financing for buying, building or investing in property.</p></div></section>
+        <section style={{ padding: '0 0 3rem' }}><div className="container"><div style={{ background: '#1e3a5f', borderRadius: '1rem', padding: '2rem', color: 'white', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '2rem' }}><div><h2>Financing with Credipass</h2><p style={{ opacity: .85 }}>Our partner supports clients in choosing a financing route that fits their property plans.</p></div><div><h3>How we help</h3><ul style={{ lineHeight: 1.8 }}><li>Review your goal and expected budget</li><li>Help you prepare for a financing conversation</li><li>Connect you with Credipass experts</li><li>Support you throughout the property purchase</li></ul></div><img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=2670" alt="House under construction" style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: '0.75rem' }} /></div></div></section>
+        <section style={{ padding: '1rem 0 3rem' }}><div className="container"><div className="glass-panel" style={{ padding: '2rem', borderRadius: '1rem', textAlign: 'center' }}><span className="section-label">Building a home</span><h2>Planning to build your own home?</h2><p style={{ color: 'var(--color-text-secondary)' }}>Visit Gotowi na Dom for inspiration and practical information before starting your project.</p><a className="btn-primary" href="https://gotowinadom.pl/" target="_blank" rel="noreferrer">Visit Gotowi na Dom</a></div></div></section>
+        <section style={{ padding: '3rem 0', background: 'white' }}><div className="container"><h2 style={{ textAlign: 'center' }}>What the financing process looks like</h2><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '2rem' }}>{[['1', 'Prepare your documents', 'Gather the documents needed for an initial financing conversation.'], ['2', 'Discuss your options', 'A Credipass expert will help you review suitable options.'], ['3', 'Make an informed decision', 'Choose the solution that supports your property plan.']].map(([step, title, text]) => <article key={step} className="glass-panel" style={{ padding: '1.5rem', borderRadius: '1rem' }}><strong style={{ color: 'var(--color-primary)' }}>{step}</strong><h3>{title}</h3><p style={{ color: 'var(--color-text-secondary)' }}>{text}</p></article>)}</div><p style={{ marginTop: '2rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>Illustrative information only — final terms, costs and lending decisions are determined by the financing provider.</p></div></section>
+    </div>;
+}
 
 // Building cost rates per m2
 const COST_RATES = {
@@ -20,6 +31,7 @@ const BUILDING_STEPS = [
 
 export function Calculators() {
     const navigate = useNavigate();
+    const { language } = useLanguage();
     // Building calculator state
     const [houseArea, setHouseArea] = useState(120);
     const [plotArea, setPlotArea] = useState(500);
@@ -51,10 +63,12 @@ export function Calculators() {
         return Math.round(num).toLocaleString('pl-PL');
     };
 
+    if (language === 'en') return <EnglishCalculators />;
+
     return (
         <div style={{ background: 'var(--color-bg-light)', minHeight: '100vh', paddingTop: '100px' }}>
             <div className="container" style={{ paddingTop: '1rem' }}>
-                <Breadcrumbs items={[{ label: 'Kalkulatory' }]} />
+                <Breadcrumbs items={[{ label: 'Finansowanie' }]} />
             </div>
             {/* Hero Section */}
             <section style={{ textAlign: 'center', padding: '2rem 0 3rem' }}>
@@ -68,7 +82,7 @@ export function Calculators() {
                         borderRadius: '0.5rem',
                         marginBottom: '1rem'
                     }}>
-                        <Calculator size={20} style={{ color: '#10b981' }} />
+                        <Handshake size={20} style={{ color: '#10b981' }} />
                     </div>
                     <h1 style={{
                         fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
@@ -76,10 +90,10 @@ export function Calculators() {
                         color: 'var(--color-text-main)',
                         marginBottom: '1rem'
                     }}>
-                        Kalkulatory - Kredyt i Budowa
+                        Finansowanie nieruchomości
                     </h1>
                     <p style={{ color: 'var(--color-text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
-                        Oblicz koszty budowy domu oraz miesięczną ratę kredytu hipotecznego. Firma wyręczy Twojego projektanta w Tłuszczu.
+                        Wspólnie z Credipass pomagamy znaleźć finansowanie zakupu, budowy lub inwestycji w nieruchomości.
                     </p>
                 </div>
             </section>
@@ -98,22 +112,21 @@ export function Calculators() {
                     }}>
                         <div>
                             <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem' }}>
-                                Kredyt hipoteczny na budowę domu - kompleksowy poradnik
+                                Finansowanie z Credipass
                             </h2>
                             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                                Wszystko, co musisz wiedzieć o finansowaniu budowy domu w Tłuszczu.
+                                Współpracujemy z Credipass, aby zapewnić klientom wsparcie w wyborze finansowania zakupu, budowy lub inwestycji w nieruchomości.
                             </p>
                         </div>
                         <div>
                             <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', marginBottom: '0.75rem' }}>
-                                Finansowanie budowy - krok po kroku
+                                Jak pomagamy w finansowaniu
                             </h3>
                             <ul style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem', lineHeight: '1.8', paddingLeft: '1.25rem', margin: 0 }}>
-                                <li>Oblicz koszt budowy - użyj naszego kalkulatora</li>
-                                <li>Przygotuj wkład własny - min. 10-20% wartości</li>
-                                <li>Wybierz ratę kredytu - sprawdź różne okresy</li>
-                                <li>Skonsultuj się z bankiem - pomożemy Ci z formalnościami</li>
-                                <li>Zacznij budować - po otrzymaniu transz kredytu</li>
+                                <li>Wstępnie analizujemy cel i budżet zakupu</li>
+                                <li>Pomagamy przygotować się do rozmowy o finansowaniu</li>
+                                <li>Łączymy Cię z ekspertami Credipass</li>
+                                <li>Wspieramy na kolejnych etapach zakupu nieruchomości</li>
                             </ul>
                         </div>
                         <div style={{
@@ -127,6 +140,31 @@ export function Calculators() {
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <section style={{ padding: '0 0 3rem' }}>
+                <div className="container">
+                    <div className="glass-panel" style={{
+                        padding: '1.5rem 2rem',
+                        borderRadius: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '1.5rem',
+                        flexWrap: 'wrap',
+                    }}>
+                        <div>
+                            <span className="section-label">Więcej o budowie domu</span>
+                            <h2 style={{ fontSize: '1.25rem', margin: '0.35rem 0 0.5rem' }}>Planujesz budowę własnego domu?</h2>
+                            <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>
+                                Odwiedź Gotowi na Dom i poznaj więcej inspiracji oraz informacji przydatnych przed rozpoczęciem budowy.
+                            </p>
+                        </div>
+                        <a className="btn-primary" href="https://gotowinadom.pl/" target="_blank" rel="noopener noreferrer">
+                            Odwiedź Gotowi na Dom
+                        </a>
                     </div>
                 </div>
             </section>

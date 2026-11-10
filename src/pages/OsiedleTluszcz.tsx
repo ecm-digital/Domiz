@@ -24,51 +24,180 @@ import {
 import { db } from '../firebase';
 import agentPhoto from '../assets/tomaszgnat.jpeg';
 import { trackEvent } from '../utils/analytics';
+import { useLanguage } from '../context/useLanguage';
 
 const PHONE_DISPLAY = '+48 517 303 400';
 const PHONE_LINK = 'tel:+48517303400';
 const EMAIL = 'hello@domizhomes.com';
-const OSIEDLE_TITLE = 'Dom pod Warszawą - Osiedle Tłuszcz Sasanka XL z garażem | Domiz Homes';
-const OSIEDLE_DESCRIPTION = 'Szukasz domu pod Warszawą? Osiedle Tłuszcz przy ul. Zaściankowej to kameralne domy Sasanka XL z garażem, ogrodem i dojazdem PKP do Warszawy.';
-const OSIEDLE_KEYWORDS = 'dom pod Warszawą, domy pod Warszawą, dom z garażem pod Warszawą, domy okolice Warszawy, dom Tłuszcz, domy Tłuszcz, Sasanka XL Tłuszcz, dom z ogrodem Mazowieckie, dom powiat wołomiński';
+const OSIEDLE_TITLE = 'Osiedle Sasankowe Tłuszcz — domy Sasanka XL z garażem | Domiz Homes';
+const OSIEDLE_DESCRIPTION = 'Osiedle Sasankowe Tłuszcz przy ul. Zaściankowej: 5 kameralnych domów Sasanka XL z garażem, ogrodem i dojazdem PKP do Warszawy.';
+const OSIEDLE_KEYWORDS = 'Osiedle Sasankowe, Osiedle Sasankowe Tłuszcz, dom pod Warszawą, domy pod Warszawą, dom z garażem pod Warszawą, dom Tłuszcz, Sasanka XL Tłuszcz, dom z ogrodem Mazowieckie';
 const OSIEDLE_URL = 'https://domizhomes.com/osiedle-tluszcz';
 const OSIEDLE_OG_IMAGE = 'https://domizhomes.com/osiedle-tluszcz/og-osiedle-tluszcz.jpg';
 const OSIEDLE_PDF_URL = '/osiedle-tluszcz/osiedle-tluszcz-oferta.pdf';
+const OSIEDLE_BRAND = 'Osiedle Sasankowe Tłuszcz';
+const HERO_IMAGE = '/osiedle-tluszcz/wizualizacja-osiedla-v6.png';
+const SITE_PLAN_IMAGE = '/osiedle-tluszcz/plan-osiedla-v1.png';
+
+function EnglishTluszczEstate() {
+    const downloadPdf = () => trackEvent('lead_contact_click', { type: 'pdf_download', source: 'english_estate_page' });
+    return (
+        <div className="tluszcz-page sasankowe-page">
+            <section className="sasankowe-hero">
+                <img className="sasankowe-hero__media" src={HERO_IMAGE} alt="Osiedle Sasankowe Tłuszcz visualisation" />
+                <div className="sasankowe-hero__shade" />
+                <div className="sasankowe-hero__content">
+                    <span className="sasankowe-hero__brand">Osiedle Sasankowe Tłuszcz</span>
+                    <h1>Quiet Tłuszcz.<br />Warsaw within reach.</h1>
+                    <p>Five Sasanka XL homes with garages — a boutique estate on Zaściankowa Street with rail access to Warsaw.</p>
+                    <div className="sasankowe-hero__actions">
+                        <a className="sasankowe-btn sasankowe-btn--primary" href="#wybierz-dom">Choose a home</a>
+                        <a className="sasankowe-btn sasankowe-btn--ghost" href="#contact">Ask about availability</a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="wybierz-dom" className="sasankowe-unit-search">
+                <div className="container">
+                    <div className="sasankowe-unit-search__intro">
+                        <span className="section-label">Unit search</span>
+                        <h2>Select home A–E on the estate plan</h2>
+                        <p>Click a unit to see its status, then ask about current availability and pricing.</p>
+                    </div>
+                    <div className="sasankowe-unit-search__layout">
+                        <figure className="sasankowe-plan">
+                            <img src={SITE_PLAN_IMAGE} alt="Illustrative plan of Osiedle Sasankowe Tłuszcz" />
+                            {DEVELOPMENT_UNITS.map((unit) => (
+                                <a
+                                    key={unit.id}
+                                    href="#contact"
+                                    className="sasankowe-hotspot"
+                                    style={{ left: unit.hotspot.left, top: unit.hotspot.top }}
+                                    aria-label={`Home ${unit.id}`}
+                                >
+                                    {unit.id}
+                                </a>
+                            ))}
+                        </figure>
+                        <div className="sasankowe-unit-list">
+                            {DEVELOPMENT_UNITS.map((unit) => (
+                                <a key={unit.id} href="#contact" className="sasankowe-unit-card">
+                                    <span>{unit.id}</span>
+                                    <div>
+                                        <strong>{unit.label}</strong>
+                                        <p>{unit.type}</p>
+                                        <em>{unit.status}</em>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="tluszcz-section"><div className="container tluszcz-location-grid"><div><span className="section-label">Location</span><h2>Zaściankowa Street, Tłuszcz</h2><p>Osiedle Sasankowe is a quiet, boutique development with rail access and everyday services nearby.</p></div><div className="tluszcz-map-card"><iframe title="Map of Osiedle Sasankowe Tłuszcz" src="https://www.google.com/maps?q=ul.%20Za%C5%9Bciankowa%2C%20T%C5%82uszcz&output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div></div></section>
+
+            <section id="contact" className="tluszcz-contact-section"><div className="container tluszcz-contact-grid"><div><span className="section-label">Contact</span><h2>Ask for the current price list and availability</h2></div><div className="tluszcz-contact-card"><a className="btn-primary" href={`mailto:${EMAIL}?subject=Osiedle%20Sasankowe%20Tluszcz`}>Email us</a><a className="btn-secondary" href={PHONE_LINK}><Phone size={18} />{PHONE_DISPLAY}</a><a className="btn-secondary" href={OSIEDLE_PDF_URL} target="_blank" rel="noreferrer" onClick={downloadPdf}><Download size={18} />Download PDF</a></div></div></section>
+        </div>
+    );
+}
 
 const TOP_FACTS = [
-    { value: '5', label: 'domów w inwestycji' },
-    { value: '2+1', label: 'dwa bliźniaki i dom wolnostojący' },
+    { value: 'A–E', label: 'oznaczenia domów na planie' },
+    { value: '5', label: 'domów w kameralnej inwestycji' },
     { value: 'ok. 83 m²', label: 'Sasanka XL z garażem' },
     { value: 'Tłuszcz', label: 'spokojna lokalizacja z PKP' },
 ];
 
 const DEVELOPMENT_UNITS = [
     {
-        label: 'Bliźniak A',
+        id: 'A',
+        label: 'Dom A',
         title: 'Sasanka XL z garażem',
-        status: 'W przygotowaniu',
-        description: 'Segment w zabudowie bliźniaczej z prywatnym ogrodem i garażem w bryle.',
+        type: 'Segment bliźniaka A–B',
+        status: 'Stan surowy zamknięty',
+        availability: 'Zapytaj o dostępność',
+        description: 'Segment w realizowanym bliźniaku A–B. Trwa montaż instalacji elektrycznej i hydraulicznej.',
+        area: 'ok. 83 m²',
+        rooms: '3 sypialnie',
+        hotspot: { left: '22%', top: '48%' },
     },
     {
-        label: 'Bliźniak B',
+        id: 'B',
+        label: 'Dom B',
         title: 'Sasanka XL z garażem',
-        status: 'W przygotowaniu',
-        description: 'Drugi bliźniak w tym samym układzie, z analogicznym standardem i osobnym wjazdem.',
+        type: 'Segment bliźniaka A–B',
+        status: 'Stan surowy zamknięty',
+        availability: 'Zapytaj o dostępność',
+        description: 'Drugi segment w realizowanym bliźniaku A–B. Równolegle prowadzone są prace przy kostce i drodze.',
+        area: 'ok. 83 m²',
+        rooms: '3 sypialnie',
+        hotspot: { left: '34%', top: '48%' },
     },
     {
-        label: 'Dom wolnostojący',
+        id: 'C',
+        label: 'Dom C',
         title: 'Sasanka XL z garażem',
-        status: 'Największa prywatność',
-        description: 'Wolnostojący dom z garażem dla osób, które chcą więcej przestrzeni wokół budynku.',
+        type: 'Segment bliźniaka C–D',
+        status: 'Stan 0 · realizacja w sierpniu',
+        availability: 'Zapytaj o dostępność',
+        description: 'Segment w bliźniaku C–D. Rozpoczęcie realizacji bliźniaka jest planowane na sierpień.',
+        area: 'ok. 83 m²',
+        rooms: '3 sypialnie',
+        hotspot: { left: '50%', top: '48%' },
+    },
+    {
+        id: 'D',
+        label: 'Dom D',
+        title: 'Sasanka XL z garażem',
+        type: 'Segment bliźniaka C–D',
+        status: 'Stan 0 · realizacja w sierpniu',
+        availability: 'Zapytaj o dostępność',
+        description: 'Drugi segment w bliźniaku C–D, w układzie Sasanka XL z garażem.',
+        area: 'ok. 83 m²',
+        rooms: '3 sypialnie',
+        hotspot: { left: '62%', top: '48%' },
+    },
+    {
+        id: 'E',
+        label: 'Dom E',
+        title: 'Sasanka XL z garażem',
+        type: 'Dom wolnostojący',
+        status: 'Stan 0 · realizacja w sierpniu',
+        availability: 'Największa prywatność',
+        description: 'Dom wolnostojący z garażem. Rozpoczęcie realizacji jest planowane na sierpień.',
+        area: 'ok. 83 m²',
+        rooms: '3 sypialnie',
+        hotspot: { left: '80%', top: '50%' },
     },
 ];
 
-const AVAILABILITY = [
-    { name: 'Bliźniak A / lokal 1', type: 'Sasanka XL z garażem', status: 'Zapytaj o dostępność' },
-    { name: 'Bliźniak A / lokal 2', type: 'Sasanka XL z garażem', status: 'Zapytaj o dostępność' },
-    { name: 'Bliźniak B / lokal 1', type: 'Sasanka XL z garażem', status: 'Zapytaj o dostępność' },
-    { name: 'Bliźniak B / lokal 2', type: 'Sasanka XL z garażem', status: 'Zapytaj o dostępność' },
-    { name: 'Dom wolnostojący', type: 'Sasanka XL z garażem', status: 'Największa prywatność' },
+const AVAILABILITY = DEVELOPMENT_UNITS.map((unit) => ({
+    name: unit.label,
+    type: unit.title,
+    status: unit.availability,
+}));
+
+const ATUTY = [
+    'Kameralne osiedle — tylko 5 domów',
+    'Sasanka XL z garażem w każdym domu',
+    'Prywatny ogród zamiast balkonu',
+    'Dojazd PKP do Warszawy',
+    'Spokojna lokalizacja przy ul. Zaściankowej',
+    'Układ rodzinny: 3 sypialnie i 2 łazienki',
+];
+
+const INVESTMENT_PROGRESS = [
+    { step: '01', title: 'Bliźniak A–B: stan surowy zamknięty', desc: 'Trwa montaż instalacji elektrycznej i hydraulicznej. Równolegle prowadzone są prace gruntowe: układanie kostki oraz przygotowanie drogi.', current: true },
+    { step: '02', title: 'Bliźniak C–D oraz dom E: stan 0', desc: 'Realizacja bliźniaka C–D i domu wolnostojącego E jest planowana na sierpień.' },
+    { step: '03', title: 'Wybór domu i kolejny krok', desc: 'Możesz wskazać konkretny dom, otrzymać aktualną dostępność i wycenę oraz umówić rozmowę lub spotkanie.' },
+];
+
+const DECISION_MATERIALS = [
+    { title: 'Oferta PDF', desc: 'Najważniejsze informacje o inwestycji w jednym dokumencie.', action: 'Otwórz PDF' },
+    { title: 'Rzuty i metraże', desc: 'Układ parteru oraz piętra wraz z powierzchniami pomieszczeń.', action: 'Zobacz rzuty' },
+    { title: 'Standard i warianty', desc: 'Zakres deweloperski oraz możliwe warianty wykończenia domu.', action: 'Poznaj warianty' },
+    { title: 'Cena i finansowanie', desc: 'Aktualna wycena konkretnego domu i rozmowa o możliwościach finansowania.', action: 'Poproś o wycenę' },
 ];
 
 const BUYING_STEPS = [
@@ -203,7 +332,7 @@ const FEATURED_REFERENCE_INVESTMENT = {
     place: 'Trojany',
     eyebrow: 'Najbliżej do obejrzenia',
     title: 'Podobne domy Sasanka XL możesz zobaczyć w Trojanach',
-    desc: 'To najbliższa realizacja referencyjna względem Osiedla Tłuszcz. Dla klientów zainteresowanych zakupem może być najlepszym punktem odniesienia do obejrzenia skali domu, układu wnętrz i charakteru zabudowy na żywo.',
+    desc: 'To najbliższa realizacja referencyjna względem Osiedla Sasankowe Tłuszcz. Dla klientów zainteresowanych zakupem może być najlepszym punktem odniesienia do obejrzenia skali domu, układu wnętrz i charakteru zabudowy na żywo.',
 };
 
 const TROJANY_VISIT_POINTS = [
@@ -275,7 +404,7 @@ const LOCATION_MAP_POINTS = [
 const SEO_INTENT_CARDS = [
     {
         title: 'Dom pod Warszawą bez dużego osiedla',
-        desc: 'Osiedle Tłuszcz to tylko 5 domów, więc jest dobrą propozycją dla osób, które szukają spokojniejszej alternatywy dla gęstej zabudowy bliżej Warszawy.',
+        desc: 'Osiedle Sasankowe Tłuszcz to tylko 5 domów, więc jest dobrą propozycją dla osób, które szukają spokojniejszej alternatywy dla gęstej zabudowy bliżej Warszawy.',
     },
     {
         title: 'Dojazd do Warszawy koleją',
@@ -321,7 +450,7 @@ const WARSAW_COMPARISON_ROWS = [
 const FAQ = [
     {
         question: 'Ile domów powstaje w inwestycji?',
-        answer: 'Planowana jest mała inwestycja: dwa budynki bliźniacze po dwa lokale oraz jeden dom wolnostojący z garażem.',
+        answer: 'Planowana jest mała inwestycja obejmująca 5 domów: cztery segmenty w dwóch budynkach bliźniaczych oraz jeden dom wolnostojący z garażem.',
     },
     {
         question: 'Czy każdy dom ma garaż?',
@@ -361,7 +490,7 @@ const FAQ = [
     },
     {
         question: 'Czy to dobra oferta dla osób szukających domu pod Warszawą?',
-        answer: 'Tak. Osiedle Tłuszcz jest kierowane do osób, które szukają domu pod Warszawą z ogrodem, garażem i spokojniejszą lokalizacją, ale nadal chcą mieć dojazd koleją i dostęp do usług w mieście.',
+        answer: 'Tak. Osiedle Sasankowe Tłuszcz jest kierowane do osób, które szukają domu pod Warszawą z ogrodem, garażem i spokojniejszą lokalizacją, ale nadal chcą mieć dojazd koleją i dostęp do usług w mieście.',
     },
     {
         question: 'Czym różni się dom w Tłuszczu od mieszkania bliżej Warszawy?',
@@ -378,16 +507,19 @@ const FAQ = [
 ];
 
 export function OsiedleTluszcz() {
+    const { language } = useLanguage();
+    const [activeUnitId, setActiveUnitId] = useState(DEVELOPMENT_UNITS[0].id);
     const [contactSent, setContactSent] = useState(false);
     const [contactName, setContactName] = useState('');
     const [contactEmail, setContactEmail] = useState('');
     const [contactPhone, setContactPhone] = useState('');
-    const [contactMessage, setContactMessage] = useState('Interesuje mnie Osiedle Tłuszcz - Sasanka XL z garażem.');
+    const [contactMessage, setContactMessage] = useState(`Interesuje mnie ${OSIEDLE_BRAND} — Sasanka XL z garażem.`);
     const [contactSubmitting, setContactSubmitting] = useState(false);
     const [showStickyCta, setShowStickyCta] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState('');
     const [selectedHome, setSelectedHome] = useState('');
     const [wantsTrojanyVisit, setWantsTrojanyVisit] = useState(false);
+    const activeUnit = DEVELOPMENT_UNITS.find((unit) => unit.id === activeUnitId) || DEVELOPMENT_UNITS[0];
 
     useEffect(() => {
         document.title = OSIEDLE_TITLE;
@@ -422,7 +554,7 @@ export function OsiedleTluszcz() {
                 {
                     '@type': 'Residence',
                     '@id': `${OSIEDLE_URL}#residence`,
-                    name: 'Osiedle Tłuszcz - domy Sasanka XL z garażem pod Warszawą',
+                    name: 'Osiedle Sasankowe Tłuszcz - domy Sasanka XL z garażem pod Warszawą',
                     description: OSIEDLE_DESCRIPTION,
                     image: [OSIEDLE_OG_IMAGE],
                     url: OSIEDLE_URL,
@@ -514,7 +646,7 @@ export function OsiedleTluszcz() {
             setContactName('');
             setContactEmail('');
             setContactPhone('');
-            setContactMessage('Interesuje mnie Osiedle Tłuszcz - Sasanka XL z garażem.');
+            setContactMessage(`Interesuje mnie ${OSIEDLE_BRAND} — Sasanka XL z garażem.`);
             setSelectedPackage('');
             setSelectedHome('');
             setWantsTrojanyVisit(false);
@@ -536,29 +668,39 @@ export function OsiedleTluszcz() {
         }
     };
 
-    const askForPackage = (packageName: string) => {
-        setSelectedPackage(packageName);
-        setContactMessage(`Interesuje mnie Osiedle Tłuszcz - Sasanka XL z garażem. Proszę o cenę i szczegóły pakietu: ${packageName}.`);
+    const scrollToContact = () => {
         const contactSection = document.getElementById('kontakt');
         contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         window.setTimeout(() => contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500);
+    };
+
+    const selectUnit = (unitId: string, scrollToForm = false) => {
+        const unit = DEVELOPMENT_UNITS.find((item) => item.id === unitId);
+        if (!unit) return;
+        setActiveUnitId(unit.id);
+        setSelectedHome(unit.label);
+        setContactMessage(`Interesuje mnie ${OSIEDLE_BRAND}. Proszę o dostępność i wycenę: ${unit.label} (${unit.type}).`);
+        trackEvent('lead_contact_click', { type: 'unit_select', unit: unit.id, source: 'unit_search' });
+        if (scrollToForm) scrollToContact();
+    };
+
+    const askForPackage = (packageName: string) => {
+        setSelectedPackage(packageName);
+        setContactMessage(`Interesuje mnie ${OSIEDLE_BRAND} — Sasanka XL z garażem. Proszę o cenę i szczegóły pakietu: ${packageName}.`);
+        scrollToContact();
         trackEvent('lead_contact_click', { type: 'package', package: packageName, source: 'osiedle_packages' });
     };
 
     const askForTrojanyVisit = () => {
         setWantsTrojanyVisit(true);
-        setContactMessage('Interesuje mnie Osiedle Tłuszcz. Chcę umówić obejrzenie podobnych domów Sasanka XL w Trojanach.');
-        const contactSection = document.getElementById('kontakt');
-        contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.setTimeout(() => contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500);
+        setContactMessage(`Interesuje mnie ${OSIEDLE_BRAND}. Chcę umówić obejrzenie podobnych domów Sasanka XL w Trojanach.`);
+        scrollToContact();
         trackEvent('lead_contact_click', { type: 'reference_visit', source: 'trojany_reference' });
     };
 
     const askForPriceList = () => {
-        setContactMessage('Interesuje mnie Osiedle Tłuszcz. Proszę o aktualny cennik, dostępność domów i informacje o wariantach wyposażenia.');
-        const contactSection = document.getElementById('kontakt');
-        contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.setTimeout(() => contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500);
+        setContactMessage(`Interesuje mnie ${OSIEDLE_BRAND}. Proszę o aktualny cennik, dostępność domów i informacje o wariantach wyposażenia.`);
+        scrollToContact();
         trackEvent('lead_contact_click', { type: 'price_list', source: 'quick_lead' });
     };
 
@@ -566,52 +708,140 @@ export function OsiedleTluszcz() {
         trackEvent('lead_contact_click', { type: 'pdf_download', source });
     };
 
-    return (
-        <div className="tluszcz-page">
-            <section className="tluszcz-hero">
-                <div className="container tluszcz-hero-grid">
-                    <div className="tluszcz-hero-copy">
-                        <span className="tluszcz-eyebrow">Dom pod Warszawą | Osiedle Tłuszcz</span>
-                        <h1>Dom pod Warszawą: Sasanka XL z garażem w Tłuszczu</h1>
-                        <p>
-                            Powstają dwa domy bliźniacze z garażami oraz jeden dom wolnostojący z garażem.
-                            To propozycja dla rodzin szukających domu z ogrodem pod Warszawą, w spokojnej
-                            lokalizacji z dostępem do PKP i codziennych usług.
-                        </p>
-                        <div className="tluszcz-hero-facts">
-                            {TOP_FACTS.map((fact) => (
-                                <div key={fact.label}>
-                                    <strong>{fact.value}</strong>
-                                    <span>{fact.label}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="tluszcz-hero-actions">
-                            <a className="btn-primary" href="#kontakt">Zapytaj o dostępność</a>
-                            <a className="btn-secondary" href={PHONE_LINK}>{PHONE_DISPLAY}</a>
-                            <a
-                                className="btn-secondary"
-                                href={OSIEDLE_PDF_URL}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={() => trackPdfDownload('hero')}
-                            >
-                                <Download size={18} />
-                                Otwórz PDF
-                            </a>
-                        </div>
-                    </div>
+    const askForVisit = (visitType: string) => {
+        setContactMessage(`Chcę umówić ${visitType}. Proszę o kontakt w sprawie dostępnych terminów.`);
+        if (visitType.includes('Trojanach')) setWantsTrojanyVisit(true);
+        trackEvent('lead_contact_click', { type: 'visit_request', source: visitType });
+    };
 
+    if (language === 'en') return <EnglishTluszczEstate />;
+
+    return (
+        <div className="tluszcz-page sasankowe-page">
+            <section className="sasankowe-hero">
+                <img
+                    className="sasankowe-hero__media"
+                    src={HERO_IMAGE}
+                    alt="Wizualizacja Osiedla Sasankowe Tłuszcz: bliźniaki Sasanka XL i dom wolnostojący wśród zieleni"
+                />
+                <div className="sasankowe-hero__shade" aria-hidden="true" />
+                <div className="sasankowe-hero__content">
+                    <span className="sasankowe-hero__brand">{OSIEDLE_BRAND}</span>
+                    <h1>Spokój Tłuszcza.<br />Bliskość Warszawy.</h1>
+                    <p>
+                        Kameralne osiedle 5 domów Sasanka XL z garażem przy ul. Zaściankowej —
+                        dla rodzin, które chcą ogród, prywatność i dojazd PKP do stolicy.
+                    </p>
+                    <div className="sasankowe-hero__actions">
+                        <a className="sasankowe-btn sasankowe-btn--primary" href="#wybierz-dom">Wybierz dom</a>
+                        <a className="sasankowe-btn sasankowe-btn--ghost" href="#kontakt">Zapytaj o dostępność</a>
+                        <a
+                            className="sasankowe-btn sasankowe-btn--ghost"
+                            href={OSIEDLE_PDF_URL}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => trackPdfDownload('hero')}
+                        >
+                            <Download size={18} />
+                            Oferta PDF
+                        </a>
+                    </div>
+                </div>
+                <div className="sasankowe-hero__facts">
+                    {TOP_FACTS.map((fact) => (
+                        <div key={fact.label}>
+                            <strong>{fact.value}</strong>
+                            <span>{fact.label}</span>
+                        </div>
+                    ))}
                 </div>
             </section>
 
-            <section className="tluszcz-availability-strip">
-                <div className="container tluszcz-availability-inner">
-                    <div>
-                        <span className="section-label">Dostępność</span>
-                        <h2>Sprawdź, który z 5 domów możesz zarezerwować</h2>
+            <section className="sasankowe-atuty">
+                <div className="container">
+                    <div className="sasankowe-atuty__heading">
+                        <span className="section-label">Atuty inwestycji</span>
+                        <h2>{OSIEDLE_BRAND}</h2>
+                        <p>
+                            To odpowiedź na to, czego szuka coraz więcej rodzin — podmiejski spokój
+                            z bezpośrednim dostępem do Warszawy i pełnym standardem rodzinnego domu.
+                        </p>
                     </div>
-                    <a className="btn-primary" href="#kontakt">Sprawdź dostępność</a>
+                    <ul className="sasankowe-atuty__list">
+                        {ATUTY.map((item) => (
+                            <li key={item}><Check size={18} /><span>{item}</span></li>
+                        ))}
+                    </ul>
+                </div>
+            </section>
+
+            <section id="wybierz-dom" className="sasankowe-unit-search">
+                <div className="container">
+                    <div className="sasankowe-unit-search__intro">
+                        <span className="section-label">Wybierz dom</span>
+                        <h2>Interaktywny plan Osiedla Sasankowe</h2>
+                        <p>Kliknij dom A–E na planie, zobacz status realizacji i wyślij zapytanie o dostępność.</p>
+                    </div>
+
+                    <div className="sasankowe-unit-search__layout">
+                        <figure className="sasankowe-plan">
+                            <img
+                                src={SITE_PLAN_IMAGE}
+                                alt="Interaktywny plan Osiedla Sasankowe Tłuszcz: domy A–E"
+                            />
+                            {DEVELOPMENT_UNITS.map((unit) => (
+                                <button
+                                    key={unit.id}
+                                    type="button"
+                                    className={`sasankowe-hotspot${activeUnitId === unit.id ? ' is-active' : ''}`}
+                                    style={{ left: unit.hotspot.left, top: unit.hotspot.top }}
+                                    onClick={() => selectUnit(unit.id)}
+                                    aria-pressed={activeUnitId === unit.id}
+                                    aria-label={`${unit.label}: ${unit.status}`}
+                                >
+                                    {unit.id}
+                                </button>
+                            ))}
+                            <figcaption>Plan poglądowy. Status i dostępność potwierdzimy podczas kontaktu.</figcaption>
+                        </figure>
+
+                        <aside className="sasankowe-unit-panel">
+                            <div className="sasankowe-unit-panel__badge">{activeUnit.availability}</div>
+                            <h3>{activeUnit.label}</h3>
+                            <p className="sasankowe-unit-panel__type">{activeUnit.type}</p>
+                            <dl className="sasankowe-unit-panel__meta">
+                                <div><dt>Model</dt><dd>{activeUnit.title}</dd></div>
+                                <div><dt>Metraż</dt><dd>{activeUnit.area}</dd></div>
+                                <div><dt>Układ</dt><dd>{activeUnit.rooms}</dd></div>
+                                <div><dt>Etap</dt><dd>{activeUnit.status}</dd></div>
+                            </dl>
+                            <p>{activeUnit.description}</p>
+                            <div className="sasankowe-unit-panel__actions">
+                                <button type="button" className="sasankowe-btn sasankowe-btn--primary" onClick={() => selectUnit(activeUnit.id, true)}>
+                                    Zapytaj o ten dom
+                                </button>
+                                <a className="sasankowe-btn sasankowe-btn--ghost" href="#rzuty">Zobacz rzuty</a>
+                            </div>
+                        </aside>
+                    </div>
+
+                    <div className="sasankowe-unit-list">
+                        {DEVELOPMENT_UNITS.map((unit) => (
+                            <button
+                                key={unit.id}
+                                type="button"
+                                className={`sasankowe-unit-card${activeUnitId === unit.id ? ' is-active' : ''}`}
+                                onClick={() => selectUnit(unit.id)}
+                            >
+                                <span>{unit.id}</span>
+                                <div>
+                                    <strong>{unit.label}</strong>
+                                    <p>{unit.type}</p>
+                                    <em>{unit.status}</em>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </section>
 
@@ -619,7 +849,7 @@ export function OsiedleTluszcz() {
                 <div className="container tluszcz-quick-lead">
                     <div>
                         <span className="section-label">Cennik i dostępność</span>
-                        <h2>Wyślij mi aktualny cennik Osiedla Tłuszcz</h2>
+                        <h2>Wyślij mi aktualny cennik {OSIEDLE_BRAND}</h2>
                         <p>
                             Zostaw kontakt, a odeślemy informacje o wolnych domach, wariantach wyposażenia
                             i możliwości obejrzenia podobnych domów w Trojanach.
@@ -633,7 +863,7 @@ export function OsiedleTluszcz() {
                     ) : (
                         <form
                             className="tluszcz-quick-lead-form"
-                            onSubmit={(e) => handleContactSubmit(e, 'Interesuje mnie Osiedle Tłuszcz. Proszę o aktualny cennik, dostępność domów i informacje o wariantach wyposażenia.')}
+                            onSubmit={(e) => handleContactSubmit(e, `Interesuje mnie ${OSIEDLE_BRAND}. Proszę o aktualny cennik, dostępność domów i informacje o wariantach wyposażenia.`)}
                         >
                             <input type="text" placeholder="Imię" value={contactName} onChange={(e) => setContactName(e.target.value)} required />
                             <input type="email" placeholder="E-mail" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
@@ -660,39 +890,20 @@ export function OsiedleTluszcz() {
                 </div>
             </section>
 
-            <section className="tluszcz-section">
+            <section className="tluszcz-section tluszcz-progress-section">
                 <div className="container">
                     <div className="tluszcz-section-heading">
-                        <span className="section-label">Co powstaje</span>
-                        <h2>Trzy budynki, pięć domów, jeden spójny standard</h2>
+                        <span className="section-label">Aktualny etap inwestycji</span>
+                        <h2>Na jakim etapie jest Osiedle Sasankowe Tłuszcz?</h2>
+                        <p>Pokazujemy jasno, co jest aktualnie dostępne i jaki jest kolejny krok dla osób zainteresowanych zakupem.</p>
                     </div>
-                    <div className="tluszcz-units-grid">
-                        {DEVELOPMENT_UNITS.map((unit) => (
-                            <article key={unit.label} className="tluszcz-info-card">
-                                <span>{unit.label}</span>
-                                <h3>{unit.title}</h3>
-                                <p>{unit.description}</p>
-                                <strong>{unit.status}</strong>
+                    <div className="tluszcz-progress-grid">
+                        {INVESTMENT_PROGRESS.map((item) => (
+                            <article key={item.step} className={`tluszcz-progress-card${item.current ? ' is-current' : ''}`}>
+                                <span>{item.current ? 'Teraz' : `Etap ${item.step}`}</span>
+                                <h3>{item.title}</h3>
+                                <p>{item.desc}</p>
                             </article>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            <section className="tluszcz-section tluszcz-availability-section">
-                <div className="container">
-                    <div className="tluszcz-section-heading">
-                        <span className="section-label">5 domów</span>
-                        <h2>Aktualna lista wariantów w inwestycji</h2>
-                        <p>Wybierz konkretny lokal albo dom wolnostojący i poproś o aktualną dostępność, cenę oraz standard.</p>
-                    </div>
-                    <div className="tluszcz-availability-grid">
-                        {AVAILABILITY.map((unit) => (
-                            <a key={unit.name} href="#kontakt" className="tluszcz-availability-card">
-                                <span>{unit.status}</span>
-                                <strong>{unit.name}</strong>
-                                <p>{unit.type}</p>
-                            </a>
                         ))}
                     </div>
                 </div>
@@ -730,7 +941,7 @@ export function OsiedleTluszcz() {
                         </div>
                         <div className="tluszcz-map-card">
                             <iframe
-                                title="Mapa lokalizacji Osiedla Tłuszcz przy ul. Zaściankowej"
+                                title="Mapa lokalizacji Osiedla Sasankowe Tłuszcz przy ul. Zaściankowej"
                                 src="https://www.google.com/maps?q=ul.%20Za%C5%9Bciankowa%2C%20T%C5%82uszcz&output=embed"
                                 loading="lazy"
                                 referrerPolicy="no-referrer-when-downgrade"
@@ -754,7 +965,7 @@ export function OsiedleTluszcz() {
                         <span className="section-label">Dojazd do Warszawy</span>
                         <h2>Dom pod Warszawą, który nadal pozwala planować życie wokół miasta</h2>
                         <p>
-                            Osiedle Tłuszcz jest dla osób, które chcą więcej prywatnej przestrzeni, ale nie chcą
+                            Osiedle Sasankowe Tłuszcz jest dla osób, które chcą więcej prywatnej przestrzeni, ale nie chcą
                             odcinać się od Warszawy. Aktualny czas przejazdu warto zawsze sprawdzić w rozkładzie PKP
                             lub mapach, ale sama lokalizacja daje sensowną bazę dla pracy, szkoły i spraw rodzinnych.
                         </p>
@@ -779,7 +990,7 @@ export function OsiedleTluszcz() {
                         <p>
                             Jeżeli wpisujesz w Google „dom pod Warszawą”, najczęściej szukasz kompromisu:
                             więcej prywatnej przestrzeni niż w mieszkaniu, ale nadal z rozsądnym dojazdem
-                            do pracy, szkoły i usług. Osiedle Tłuszcz odpowiada właśnie na taką potrzebę.
+                            do pracy, szkoły i usług. Osiedle Sasankowe Tłuszcz odpowiada właśnie na taką potrzebę.
                         </p>
                     </div>
                     <div className="tluszcz-benefits-grid">
@@ -809,7 +1020,7 @@ export function OsiedleTluszcz() {
                         <div className="tluszcz-comparison-row tluszcz-comparison-head" role="row">
                             <span role="columnheader">Kryterium</span>
                             <span role="columnheader">Mieszkanie w Warszawie</span>
-                            <span role="columnheader">Dom w Osiedlu Tłuszcz</span>
+                            <span role="columnheader">Dom w Osiedlu Sasankowe Tłuszcz</span>
                         </div>
                         {WARSAW_COMPARISON_ROWS.map((row) => (
                             <div key={row.label} className="tluszcz-comparison-row" role="row">
@@ -830,7 +1041,7 @@ export function OsiedleTluszcz() {
                         <p>
                             Sasanka XL to model zaprojektowany jako alternatywa dla mieszkania w bloku:
                             około 83 m² powierzchni użytkowej, trzy sypialnie, garderoba, ogródek oraz
-                            garaż lub miejsce postojowe. W Osiedlu Tłuszcz komunikujemy wariant z garażem
+                            garaż lub miejsce postojowe. W Osiedlu Sasankowe Tłuszcz komunikujemy wariant z garażem
                             dla każdego domu.
                         </p>
                         <a
@@ -877,7 +1088,7 @@ export function OsiedleTluszcz() {
                 </div>
             </section>
 
-            <section className="tluszcz-section tluszcz-muted-section">
+            <section id="rzuty" className="tluszcz-section tluszcz-muted-section">
                 <div className="container">
                     <div className="tluszcz-section-heading">
                         <span className="section-label">Rzuty 3D</span>
@@ -925,10 +1136,41 @@ export function OsiedleTluszcz() {
                 </div>
             </section>
 
-            <section className="tluszcz-section">
+            <section className="tluszcz-section tluszcz-materials-section">
                 <div className="container">
                     <div className="tluszcz-section-heading">
-                        <span className="section-label">Cennik</span>
+                        <span className="section-label">Materiały dla zdecydowanych</span>
+                        <h2>Wszystko, czego potrzebujesz przed decyzją</h2>
+                        <p>Zbierz podstawowe materiały, sprawdź układ domu i poproś o informacje dotyczące konkretnego wariantu.</p>
+                    </div>
+                    <div className="tluszcz-materials-grid">
+                        {DECISION_MATERIALS.map((item, index) => {
+                            const href = index === 0 ? OSIEDLE_PDF_URL : index === 1 ? '#rzuty' : index === 2 ? '#warianty' : '#kontakt';
+                            const isPdf = index === 0;
+                            return (
+                                <a
+                                    key={item.title}
+                                    className="tluszcz-material-card"
+                                    href={href}
+                                    {...(isPdf ? { target: '_blank', rel: 'noreferrer' } : {})}
+                                    onClick={() => {
+                                        if (isPdf) trackPdfDownload('materials_section');
+                                        if (index === 3) askForPriceList();
+                                    }}
+                                >
+                                    <Download size={21} />
+                                    <div><h3>{item.title}</h3><p>{item.desc}</p><strong>{item.action}</strong></div>
+                                </a>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            <section id="warianty" className="tluszcz-section">
+                <div className="container">
+                    <div className="tluszcz-section-heading">
+                        <span className="section-label">Ceny i finansowanie</span>
                         <h2>4 warianty wyposażenia domu</h2>
                         <p>
                             Finalna cena zależy od wybranego domu, dostępności i zakresu wyposażenia.
@@ -952,6 +1194,17 @@ export function OsiedleTluszcz() {
                                 </button>
                             </article>
                         ))}
+                    </div>
+                    <div className="tluszcz-finance-card">
+                        <div>
+                            <span className="section-label">Przejrzysta wycena</span>
+                            <h3>Otrzymaj cenę konkretnego domu i sprawdź możliwości finansowania</h3>
+                            <p>Cena zależy od wybranego domu i wariantu wykończenia. Przekazujemy aktualną wycenę dla wskazanego wariantu, a w sprawie finansowania współpracujemy z Credipass.</p>
+                        </div>
+                        <div className="tluszcz-finance-actions">
+                            <a className="btn-primary" href="#kontakt" onClick={askForPriceList}>Poproś o aktualną wycenę</a>
+                            <a className="btn-secondary" href="/kalkulatory">Sprawdź finansowanie</a>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -985,7 +1238,7 @@ export function OsiedleTluszcz() {
                         <span className="section-label">Zrealizowane inwestycje</span>
                         <h2>Sasanki stoją już w wielu miejscach w Polsce</h2>
                         <p>
-                            Osiedle Tłuszcz bazuje na sprawdzonym modelu domu. Na oficjalnej stronie Sasanki
+                            Osiedle Sasankowe Tłuszcz bazuje na sprawdzonym modelu domu. Na oficjalnej stronie Sasanki
                             można zobaczyć przykłady zrealizowanych osiedli w różnych regionach kraju.
                         </p>
                         <a
@@ -1090,7 +1343,7 @@ export function OsiedleTluszcz() {
                         <h2>Zobacz klimat podobnej realizacji</h2>
                         <p>
                             To materiał poglądowy z innej inwestycji. Pokazuje charakter zabudowy i standard
-                            komunikacji, a docelowe wideo Osiedla Tłuszcz możemy podmienić, gdy będzie gotowe.
+                            komunikacji, a docelowe wideo Osiedla Sasankowe Tłuszcz możemy podmienić, gdy będzie gotowe.
                         </p>
                     </div>
                     <div className="tluszcz-video-frame">
@@ -1123,6 +1376,21 @@ export function OsiedleTluszcz() {
                             allowFullScreen
                             loading="lazy"
                         />
+                    </div>
+                </div>
+            </section>
+
+            <section className="tluszcz-section tluszcz-visit-section">
+                <div className="container tluszcz-visit-grid">
+                    <div>
+                        <span className="section-label">Umów wizytę</span>
+                        <h2>Wybierz sposób, w jaki chcesz poznać inwestycję</h2>
+                        <p>Możemy zacząć od krótkiej rozmowy, przejść przez szczegóły inwestycji na spotkaniu albo umówić obejrzenie podobnych domów Sasanka XL w Trojanach.</p>
+                    </div>
+                    <div className="tluszcz-visit-actions">
+                        <a href="#kontakt" className="btn-primary" onClick={() => askForVisit('rozmowę o inwestycji')}>Umów rozmowę</a>
+                        <a href="#kontakt" className="btn-secondary" onClick={() => askForVisit('spotkanie w sprawie Osiedla Sasankowe Tłuszcz')}>Umów spotkanie</a>
+                        <a href="#kontakt" className="btn-secondary" onClick={() => askForVisit('obejrzenie podobnych domów w Trojanach')}>Zobacz dom w Trojanach</a>
                     </div>
                 </div>
             </section>
@@ -1179,7 +1447,7 @@ export function OsiedleTluszcz() {
                     <div className="tluszcz-contact-card">
                         <div>
                             <span className="section-label">Kontakt</span>
-                            <h2>Zapytaj o Osiedle Tłuszcz</h2>
+                            <h2>Zapytaj o Osiedle Sasankowe Tłuszcz</h2>
                             <p>
                                 Podaj kontakt, a wrócimy z aktualnym statusem dostępności domów,
                                 standardem i kolejnymi krokami rezerwacji.
@@ -1249,7 +1517,7 @@ export function OsiedleTluszcz() {
                                     {contactSubmitting ? 'Wysyłanie...' : 'Wyślij zapytanie'}
                                 </button>
                                 <p className="tluszcz-form-note">
-                                    Wysyłając formularz, prosisz o kontakt w sprawie Osiedla Tłuszcz. Dane wykorzystamy wyłącznie do obsługi zapytania.
+                                    Wysyłając formularz, prosisz o kontakt w sprawie Osiedla Sasankowe Tłuszcz. Dane wykorzystamy wyłącznie do obsługi zapytania.
                                 </p>
                             </form>
                         )}

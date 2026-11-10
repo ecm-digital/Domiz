@@ -16,6 +16,7 @@ const NAV_MORE = [
     { key: 'nav.calculators', path: '/kalkulatory' },
     { key: 'nav.blog', path: '/blog' },
     { key: 'nav.smartHome', path: '/smart-home' },
+    { key: 'nav.aboutTluszcz', path: '/o-tluszczu' },
 ];
 
 export function Header() {

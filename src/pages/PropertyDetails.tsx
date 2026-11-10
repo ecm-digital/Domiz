@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProperties } from '../hooks/useProperties';
-import { MapPin, Bed, Bath, Square, ArrowLeft, Phone, Mail, Check, Share2, Loader2, X, ChevronLeft, ChevronRight, ShieldCheck, FileCheck, Banknote } from 'lucide-react';
+import { MapPin, Bed, Bath, Square, ArrowLeft, Phone, Mail, Check, Share2, Loader2, X, ChevronLeft, ChevronRight, ShieldCheck, FileCheck, Banknote, CalendarDays } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { addDoc, collection } from 'firebase/firestore';
 import agentPhoto from '../assets/tomaszgnat.jpeg';
 import { PropertyCard } from '../components/PropertyCard';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -9,6 +10,17 @@ import { MortgageCalculator } from '../components/MortgageCalculator';
 import { trackEvent } from '../utils/analytics';
 import { useLanguage } from '../context/useLanguage';
 import { setSeo } from '../utils/seo';
+import { getLocalizedProperty } from '../data/propertyLocalization';
+import { db } from '../firebase';
+
+const VIEWING_TIME_SLOTS = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00'];
+
+const toDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 export function PropertyDetails() {
     const { id } = useParams();
@@ -21,9 +33,28 @@ export function PropertyDetails() {
 
     // Bezpieczne porównanie ID (string vs number)
     const property = properties.find(p => String(p.id) === propertyId);
+    const localizedProperty = property ? getLocalizedProperty(property, language) : null;
+    const displayTitle = localizedProperty?.title || '';
+    const displayDescription = localizedProperty?.description || '';
+    const displayFeatures = localizedProperty?.features || [];
 
     const [activeImage, setActiveImage] = useState(0);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+    const [isViewingModalOpen, setIsViewingModalOpen] = useState(false);
+    const [selectedViewingDate, setSelectedViewingDate] = useState(() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return toDateKey(tomorrow);
+    });
+    const [selectedViewingTime, setSelectedViewingTime] = useState(VIEWING_TIME_SLOTS[2]);
+    const [viewerName, setViewerName] = useState('');
+    const [viewerEmail, setViewerEmail] = useState('');
+    const [viewerPhone, setViewerPhone] = useState('');
+    const [viewingNote, setViewingNote] = useState('');
+    const [viewingConsent, setViewingConsent] = useState(false);
+    const [isViewingSubmitting, setIsViewingSubmitting] = useState(false);
+    const [viewingError, setViewingError] = useState('');
+    const [viewingSuccess, setViewingSuccess] = useState(false);
 
     const allImages = property ? [property.image, ...(property.images || [])] : [];
     const imageCount = allImages.length;
@@ -61,16 +92,16 @@ export function PropertyDetails() {
     useEffect(() => {
         if (property) {
             const path = window.location.pathname;
-            const description = property.description
-                ? `${property.description.replace(/\s+/g, ' ').trim().substring(0, 157)}...`
-                : `Oferta nieruchomości ${property.title} w Domiz Homes.`;
+            const description = displayDescription
+                ? `${displayDescription.replace(/\s+/g, ' ').trim().substring(0, 157)}...`
+                : `Oferta nieruchomości ${displayTitle} w Domiz Homes.`;
 
             setSeo({
-                title: `${property.title} | Domiz Homes`,
+                title: `${displayTitle} | Domiz Homes`,
                 description,
                 path,
                 image: property.image,
-                keywords: `${property.title}, ${property.location}, nieruchomość na sprzedaż, Domiz Homes`,
+                keywords: `${displayTitle}, ${property.location}, nieruchomość na sprzedaż, Domiz Homes`,
             });
         } else {
             setSeo({
@@ -80,7 +111,7 @@ export function PropertyDetails() {
                 noindex: true,
             });
         }
-    }, [id, property]);
+    }, [id, property, displayDescription, displayTitle]);
 
     useEffect(() => {
         if (!property) return;
@@ -97,8 +128,8 @@ export function PropertyDetails() {
         const schema = {
             '@context': 'https://schema.org',
             '@type': 'RealEstateListing',
-            name: property.title,
-            description: property.description.substring(0, 200),
+            name: displayTitle,
+            description: displayDescription.substring(0, 200),
             url: window.location.href,
             image: property.image,
             address: { '@type': 'PostalAddress', addressLocality: property.location },
@@ -124,7 +155,7 @@ export function PropertyDetails() {
             const s = document.getElementById('property-jsonld');
             if (s) s.remove();
         };
-    }, [property]);
+    }, [property, displayDescription, displayTitle]);
 
     if (loading) {
         return (
@@ -152,7 +183,7 @@ export function PropertyDetails() {
     // Użyj lokalnego zdjęcia dla Tomasza, a dla innych (przyszłych) agentów - zdjęcia z bazy
     const displayAgentImage = property.agent.name === 'Tomasz Gnat' ? agentPhoto : property.agent.image;
     // Override numeru telefonu dla Tomasza
-    const displayAgentPhone = '+48 517 303 400';
+    const displayAgentPhone = property.agent.phone || '+48 517 303 400';
 
     // Filter other properties for "See Also" section
     const relatedProperties = properties
@@ -165,8 +196,8 @@ export function PropertyDetails() {
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: property.title,
-                    text: `Zobacz ofertę: ${property.title}`,
+                    title: displayTitle,
+                    text: `Zobacz ofertę: ${displayTitle}`,
                     url: window.location.href,
                 });
             } else if (navigator.clipboard?.writeText) {
@@ -182,10 +213,65 @@ export function PropertyDetails() {
         }
     };
 
+    const viewingDates = Array.from({ length: 10 }, (_, index) => {
+        const date = new Date();
+        date.setHours(12, 0, 0, 0);
+        date.setDate(date.getDate() + index + 1);
+        return date;
+    });
+
+    const openViewingModal = () => {
+        setViewingError('');
+        setViewingSuccess(false);
+        setIsViewingModalOpen(true);
+        trackEvent('lead_contact_click', {
+            type: 'presentation',
+            source: 'property_details_sidebar',
+            property_id: property.id,
+        });
+    };
+
+    const submitViewingRequest = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!viewerName.trim() || !viewerEmail.trim() || !viewerPhone.trim() || !viewingConsent) {
+            setViewingError(language === 'en' ? 'Complete the required fields and accept the consent.' : 'Uzupełnij wymagane pola i zaakceptuj zgodę.');
+            return;
+        }
+
+        setIsViewingSubmitting(true);
+        setViewingError('');
+        try {
+            await addDoc(collection(db, 'inquiries'), {
+                type: 'viewing_request',
+                name: viewerName.trim(),
+                email: viewerEmail.trim(),
+                phone: viewerPhone.trim(),
+                message: viewingNote.trim(),
+                source: 'Karta oferty — umów prezentację',
+                leadStatus: 'presentation',
+                createdAt: new Date().toISOString(),
+                payload: {
+                    propertyId: String(property.id),
+                    propertyTitle: displayTitle,
+                    propertyLocation: property.location,
+                    appointmentDate: selectedViewingDate,
+                    appointmentTime: selectedViewingTime,
+                    timezone: 'Europe/Warsaw',
+                },
+            });
+            setViewingSuccess(true);
+        } catch (error) {
+            console.error('Viewing request failed', error);
+            setViewingError(language === 'en' ? 'We could not send the request. Please try again.' : 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie za chwilę.');
+        } finally {
+            setIsViewingSubmitting(false);
+        }
+    };
+
     return (
         <div style={{ background: 'var(--color-bg-light)', minHeight: '100vh', paddingTop: '100px', paddingBottom: '4rem' }}>
             <div className="container" style={{ padding: '1rem 0' }}>
-                <Breadcrumbs items={[{ label: 'Oferty', path: '/oferty' }, { label: property.title }]} />
+                <Breadcrumbs items={[{ label: 'Oferty', path: '/oferty' }, { label: displayTitle }]} />
             </div>
             <div className="container" style={{ padding: '0 0 1rem' }}>
                 <button
@@ -196,7 +282,7 @@ export function PropertyDetails() {
                         cursor: 'pointer', fontSize: '0.95rem', fontWeight: '500'
                     }}
                 >
-                    <ArrowLeft size={18} /> Wróć
+                    <ArrowLeft size={18} /> {t('property.back')}
                 </button>
             </div>
 
@@ -221,7 +307,7 @@ export function PropertyDetails() {
                     }} onClick={openLightbox}>
                         <img
                             src={allImages[activeImage] || property.image}
-                            alt={property.title}
+                            alt={displayTitle}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <div style={{
@@ -233,7 +319,7 @@ export function PropertyDetails() {
                                 color: 'white', padding: '0.5rem 1rem', borderRadius: '9999px',
                                 fontSize: '0.875rem', fontWeight: '600', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                             }}>
-                                {property.status === 'sprzedaz' ? 'Na Sprzedaż' : 'Wynajem'}
+                                {property.status === 'sprzedaz' ? t('common.forSale') : t('common.forRent')}
                             </span>
                         </div>
                     </div>
@@ -278,7 +364,7 @@ export function PropertyDetails() {
                         <div style={{ marginBottom: '2rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
                                 <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)', fontWeight: 'bold', color: 'var(--color-text-main)', margin: 0, lineHeight: 1.2 }}>
-                                    {property.title}
+                                    {displayTitle}
                                 </h1>
                                 <div style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: '800', color: '#10b981', whiteSpace: 'nowrap' }}>
                                     {formattedPrice}
@@ -298,34 +384,34 @@ export function PropertyDetails() {
                         }}>
                             <div style={{ textAlign: 'center' }}>
                                 <Bed size={28} color="#10b981" style={{ margin: '0 auto 0.5rem' }} />
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Sypialnie</div>
+                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{t('property.bedrooms')}</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{property.beds}</div>
                             </div>
                             <div style={{ textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>
                                 <Bath size={28} color="#10b981" style={{ margin: '0 auto 0.5rem' }} />
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Łazienki</div>
+                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{t('property.bathrooms')}</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{property.baths}</div>
                             </div>
                             <div style={{ textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>
                                 <Square size={28} color="#10b981" style={{ margin: '0 auto 0.5rem' }} />
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Powierzchnia</div>
+                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{t('property.area')}</div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{property.sqft} m²</div>
                             </div>
                         </div>
 
                         {/* Description */}
                         <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--color-text-main)' }}>Opis Nieruchomości</h3>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--color-text-main)' }}>{t('property.description')}</h3>
                             <div style={{ color: 'var(--color-text-secondary)', lineHeight: '1.8', fontSize: '1rem', whiteSpace: 'pre-line' }}>
-                                {property.description}
+                                {displayDescription}
                             </div>
                         </div>
 
                         {/* Features */}
                         <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--color-text-main)' }}>Udogodnienia</h3>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--color-text-main)' }}>{t('property.features')}</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
-                                {(property.features || []).map((feature, idx) => (
+                                {displayFeatures.map((feature, idx) => (
                                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#4b5563' }}>
                                         <div style={{ background: '#ecfdf5', borderRadius: '50%', padding: '4px' }}>
                                             <Check size={14} color="#10b981" />
@@ -338,7 +424,7 @@ export function PropertyDetails() {
 
                         {/* Map */}
                         <div className="glass-panel" style={{ padding: '2rem' }}>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--color-text-main)' }}>Lokalizacja</h3>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--color-text-main)' }}>{t('property.location')}</h3>
                             <div style={{ width: '100%', height: '350px', borderRadius: '0.75rem', overflow: 'hidden' }}>
                                 <iframe
                                     width="100%"
@@ -365,7 +451,7 @@ export function PropertyDetails() {
                                     />
                                     <div>
                                         <h4 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>{property.agent.name}</h4>
-                                        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>Ekspert ds. Nieruchomości</p>
+                                        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>{t('property.agentRole')}</p>
                                     </div>
                                 </div>
 
@@ -382,7 +468,7 @@ export function PropertyDetails() {
                                             });
                                         }}
                                     >
-                                        <Phone size={18} /> Zadzwoń
+                                        <Phone size={18} /> {t('property.call')}
                                     </a>
                                         <button
                                         type="button"
@@ -397,7 +483,7 @@ export function PropertyDetails() {
                                             navigate('/osiedle-tluszcz#kontakt');
                                         }}
                                     >
-                                        <Mail size={18} /> Formularz kontaktowy
+                                        <Mail size={18} /> {t('property.contactForm')}
                                     </button>
                                 </div>
 
@@ -405,16 +491,9 @@ export function PropertyDetails() {
                                     type="button"
                                     className="btn-primary"
                                     style={{ width: '100%', justifyContent: 'center' }}
-                                onClick={() => {
-                                    trackEvent('lead_contact_click', {
-                                        type: 'presentation',
-                                        source: 'property_details_sidebar',
-                                        property_id: property.id,
-                                    });
-                                    navigate('/osiedle-tluszcz#kontakt');
-                                }}
+                                    onClick={openViewingModal}
                                 >
-                                    Umów Prezentację
+                                    {t('property.bookViewing')}
                                 </button>
                             </div>
 
@@ -424,14 +503,14 @@ export function PropertyDetails() {
                                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
                                     onClick={handleShare}
                                 >
-                                    <Share2 size={18} /> Udostępnij tę ofertę
+                                    <Share2 size={18} /> {t('property.share')}
                                 </button>
                             </div>
 
                             {/* Trust Signals / USP Section */}
                             <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '1.5rem', background: 'linear-gradient(to bottom right, #ffffff, #f0fdf4)' }}>
                                 <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937' }}>
-                                    Dlaczego warto?
+                                    {t('property.why')}
                                 </h4>
                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     <li style={{ display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
@@ -439,8 +518,8 @@ export function PropertyDetails() {
                                             <ShieldCheck size={18} color="#10b981" />
                                         </div>
                                         <div>
-                                            <strong style={{ display: 'block', color: '#374151', fontSize: '0.875rem' }}>Bezpieczna transakcja</strong>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: '1.2' }}>Weryfikujemy stan prawny każdej nieruchomości.</span>
+                                            <strong style={{ display: 'block', color: '#374151', fontSize: '0.875rem' }}>{t('property.safeTitle')}</strong>
+                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: '1.2' }}>{t('property.safeDesc')}</span>
                                         </div>
                                     </li>
                                     <li style={{ display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
@@ -448,8 +527,8 @@ export function PropertyDetails() {
                                             <FileCheck size={18} color="#10b981" />
                                         </div>
                                         <div>
-                                            <strong style={{ display: 'block', color: '#374151', fontSize: '0.875rem' }}>Komplet dokumentów</strong>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: '1.2' }}>Dbamy o formalności od A do Z.</span>
+                                            <strong style={{ display: 'block', color: '#374151', fontSize: '0.875rem' }}>{t('property.documentsTitle')}</strong>
+                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: '1.2' }}>{t('property.documentsDesc')}</span>
                                         </div>
                                     </li>
                                     <li style={{ display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
@@ -457,8 +536,8 @@ export function PropertyDetails() {
                                             <Banknote size={18} color="#10b981" />
                                         </div>
                                         <div>
-                                            <strong style={{ display: 'block', color: '#374151', fontSize: '0.875rem' }}>Pomoc w kredycie</strong>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: '1.2' }}>Bezpłatne porównanie ofert banków.</span>
+                                            <strong style={{ display: 'block', color: '#374151', fontSize: '0.875rem' }}>{t('property.financeTitle')}</strong>
+                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: '1.2' }}>{t('property.financeDesc')}</span>
                                         </div>
                                     </li>
                                 </ul>
@@ -485,12 +564,71 @@ export function PropertyDetails() {
                         color: 'var(--color-text-main)',
                         textAlign: 'left'
                     }}>
-                        Zobacz także
+                        {t('property.related')}
                     </h2>
                     <div className="properties-grid">
                         {relatedProperties.map(prop => (
                             <PropertyCard key={prop.id} {...prop} />
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {isViewingModalOpen && (
+                <div className="viewing-modal-overlay" role="presentation" onMouseDown={() => !isViewingSubmitting && setIsViewingModalOpen(false)}>
+                    <div className="viewing-modal" role="dialog" aria-modal="true" aria-labelledby="viewing-modal-title" onMouseDown={(event) => event.stopPropagation()}>
+                        <button className="viewing-modal-close" type="button" onClick={() => setIsViewingModalOpen(false)} aria-label="Zamknij formularz">
+                            <X size={22} />
+                        </button>
+                        {viewingSuccess ? (
+                            <div className="viewing-success">
+                                <div className="viewing-success-icon"><Check size={28} /></div>
+                                <h2 id="viewing-modal-title">Prośba o prezentację wysłana</h2>
+                                <p>Potwierdzimy dostępność terminu i wrócimy do Ciebie najszybciej jak to możliwe.</p>
+                                <button type="button" className="btn-primary" onClick={() => setIsViewingModalOpen(false)}>Gotowe</button>
+                            </div>
+                        ) : (
+                            <form onSubmit={submitViewingRequest}>
+                                <div className="viewing-modal-heading">
+                                    <span className="section-label"><CalendarDays size={15} /> Prezentacja nieruchomości</span>
+                                    <h2 id="viewing-modal-title">Wybierz dogodny termin</h2>
+                                    <p>{displayTitle}</p>
+                                </div>
+
+                                <fieldset className="viewing-fieldset">
+                                    <legend>Dzień</legend>
+                                    <div className="viewing-date-grid">
+                                        {viewingDates.map((date) => {
+                                            const value = toDateKey(date);
+                                            return (
+                                                <button key={value} type="button" className={`viewing-choice ${selectedViewingDate === value ? 'is-selected' : ''}`} onClick={() => setSelectedViewingDate(value)}>
+                                                    <strong>{new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'pl-PL', { weekday: 'short' }).format(date)}</strong>
+                                                    <span>{new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'pl-PL', { day: 'numeric', month: 'short' }).format(date)}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </fieldset>
+
+                                <fieldset className="viewing-fieldset">
+                                    <legend>Godzina</legend>
+                                    <div className="viewing-time-grid">
+                                        {VIEWING_TIME_SLOTS.map((time) => <button key={time} type="button" className={`viewing-choice viewing-time ${selectedViewingTime === time ? 'is-selected' : ''}`} onClick={() => setSelectedViewingTime(time)}>{time}</button>)}
+                                    </div>
+                                </fieldset>
+
+                                <div className="viewing-form-grid">
+                                    <label>Imię i nazwisko<input required value={viewerName} onChange={(event) => setViewerName(event.target.value)} autoComplete="name" /></label>
+                                    <label>E-mail<input required type="email" value={viewerEmail} onChange={(event) => setViewerEmail(event.target.value)} autoComplete="email" /></label>
+                                    <label>Telefon<input required type="tel" value={viewerPhone} onChange={(event) => setViewerPhone(event.target.value)} autoComplete="tel" /></label>
+                                    <label>Wiadomość <span>(opcjonalnie)</span><textarea rows={3} value={viewingNote} onChange={(event) => setViewingNote(event.target.value)} /></label>
+                                </div>
+
+                                <label className="viewing-consent"><input type="checkbox" checked={viewingConsent} onChange={(event) => setViewingConsent(event.target.checked)} /> Wyrażam zgodę na kontakt w sprawie tej prezentacji.</label>
+                                {viewingError && <p className="viewing-error" role="alert">{viewingError}</p>}
+                                <button type="submit" className="btn-primary viewing-submit" disabled={isViewingSubmitting}>{isViewingSubmitting ? 'Wysyłanie…' : 'Wyślij prośbę o prezentację'}</button>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}
@@ -509,7 +647,7 @@ export function PropertyDetails() {
                     <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
                         <img
                             src={allImages[activeImage]}
-                            alt={`Zdjęcie ${activeImage + 1}`}
+                            alt={`${t('property.photo')} ${activeImage + 1}`}
                             style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain' }}
                         />
                         <div className="lightbox-counter">
@@ -654,6 +792,75 @@ export function PropertyDetails() {
                     .lightbox-nav.prev { left: 0.5rem; }
                     .lightbox-nav.next { right: 0.5rem; }
                     .lightbox-close { top: 1rem; right: 1rem; }
+                }
+
+                .viewing-modal-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 1100;
+                    display: grid;
+                    place-items: center;
+                    padding: 1rem;
+                    background: rgba(15, 23, 42, 0.62);
+                    backdrop-filter: blur(7px);
+                }
+                .viewing-modal {
+                    position: relative;
+                    width: min(100%, 680px);
+                    max-height: min(90vh, 760px);
+                    overflow-y: auto;
+                    padding: 2rem;
+                    background: #fff;
+                    border-radius: 1.25rem;
+                    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.34);
+                }
+                .viewing-modal-close {
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    display: grid;
+                    place-items: center;
+                    width: 2.5rem;
+                    height: 2.5rem;
+                    border: 0;
+                    border-radius: 50%;
+                    background: #f1f5f9;
+                    color: #334155;
+                    cursor: pointer;
+                }
+                .viewing-modal-heading { padding-right: 2.5rem; margin-bottom: 1.5rem; }
+                .viewing-modal-heading .section-label { display: inline-flex; align-items: center; gap: 0.4rem; }
+                .viewing-modal-heading h2 { margin: 0.6rem 0 0.4rem; font-size: clamp(1.5rem, 4vw, 2rem); }
+                .viewing-modal-heading p { margin: 0; color: var(--color-text-secondary); }
+                .viewing-fieldset { margin: 0 0 1.35rem; padding: 0; border: 0; }
+                .viewing-fieldset legend { margin-bottom: 0.7rem; font-weight: 700; color: #1e293b; }
+                .viewing-date-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.55rem; }
+                .viewing-time-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.55rem; }
+                .viewing-choice { min-height: 58px; padding: 0.5rem; border: 1px solid #dbe3ec; border-radius: 0.75rem; background: #fff; color: #334155; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; font-size: 0.8rem; }
+                .viewing-choice strong { text-transform: capitalize; font-size: 0.78rem; }
+                .viewing-choice.is-selected { border-color: var(--color-primary); background: #ecfdf5; color: #047857; box-shadow: inset 0 0 0 1px var(--color-primary); }
+                .viewing-choice:hover { border-color: var(--color-primary); }
+                .viewing-time { min-height: 44px; font-weight: 700; font-size: 0.9rem; }
+                .viewing-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+                .viewing-form-grid label { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.86rem; font-weight: 650; color: #334155; }
+                .viewing-form-grid label:last-child { grid-column: 1 / -1; }
+                .viewing-form-grid label span { font-weight: 400; color: #64748b; }
+                .viewing-form-grid input, .viewing-form-grid textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.65rem; padding: 0.72rem 0.8rem; font: inherit; color: #0f172a; resize: vertical; }
+                .viewing-form-grid input:focus, .viewing-form-grid textarea:focus { outline: 3px solid rgba(16, 185, 129, 0.18); border-color: var(--color-primary); }
+                .viewing-consent { display: flex; align-items: flex-start; gap: 0.6rem; color: #475569; font-size: 0.85rem; line-height: 1.45; }
+                .viewing-consent input { margin-top: 0.15rem; accent-color: var(--color-primary); }
+                .viewing-error { margin: 0.75rem 0 0; color: #b91c1c; font-size: 0.9rem; }
+                .viewing-submit { width: 100%; justify-content: center; margin-top: 1.25rem; }
+                .viewing-submit:disabled { cursor: wait; opacity: 0.72; }
+                .viewing-success { text-align: center; padding: 1.5rem 0 0.5rem; }
+                .viewing-success-icon { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; margin: 0 auto 1rem; border-radius: 50%; background: #dcfce7; color: #15803d; }
+                .viewing-success h2 { margin: 0; color: #1e293b; }
+                .viewing-success p { max-width: 420px; margin: 0.7rem auto 1.5rem; color: #64748b; line-height: 1.55; }
+                @media (max-width: 640px) {
+                    .viewing-modal { padding: 1.35rem; border-radius: 1rem; }
+                    .viewing-date-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                    .viewing-form-grid { grid-template-columns: 1fr; }
+                    .viewing-form-grid label:last-child { grid-column: auto; }
                 }
 
                 /* Mobile Sticky CTA */

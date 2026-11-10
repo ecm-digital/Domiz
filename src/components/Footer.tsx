@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/useLanguage';
 
 export function Footer() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     return (
         <footer className="site-footer">
@@ -26,11 +26,13 @@ export function Footer() {
                             <li><Link to="/">{t('nav.home')}</Link></li>
                             <li><Link to="/oferty">{t('footer.allOffers')}</Link></li>
                             <li><Link to="/oferty?type=dom">{t('footer.housesForSale')}</Link></li>
+                            <li><Link to="/oferty">{t('footer.offersSilesia')}</Link></li>
                             <li><Link to="/oferty?search=tłuszcz">{t('footer.offersTluszcz')}</Link></li>
                             <li><Link to="/ulubione">{t('nav.favorites')}</Link></li>
                             <li><Link to="/kalkulatory">{t('nav.calculators')}</Link></li>
                             <li><Link to="/blog">{t('nav.blog')}</Link></li>
                             <li><Link to="/smart-home">{t('nav.smartHome')}</Link></li>
+                            <li><Link to="/o-tluszczu">{t('nav.aboutTluszcz')}</Link></li>
                             <li><Link to="/osiedle-tluszcz#kontakt">{t('footer.contact')}</Link></li>
                         </ul>
                     </div>
@@ -53,7 +55,7 @@ export function Footer() {
                             <li><Link to="/osiedle-tluszcz#kontakt">{t('footer.contactForm')}</Link></li>
                             <li style={{ display: 'flex', gap: '0.75rem', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
                                 <MapPin size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                                <span>ul. Prosta 20,<br />00-838 Warszawa</span>
+                                <span>{language === 'en' ? <>Silesia, Mazovia<br />and Dubai</> : <>Śląsk, Mazowsze<br />i Dubaj</>}</span>
                             </li>
                             <li style={{ display: 'flex', gap: '0.75rem', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
                                 <Phone size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />

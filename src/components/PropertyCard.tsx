@@ -5,6 +5,7 @@ import { createSlug } from '../utils/slugify';
 import { useFavorites } from '../context/FavoritesContext';
 import { useLanguage } from '../context/useLanguage';
 import { trackEvent } from '../utils/analytics';
+import { getLocalizedProperty } from '../data/propertyLocalization';
 
 const PHOTO_FALLBACK = '/properties/gwiazdy/salon.jpg';
 
@@ -13,6 +14,7 @@ export function PropertyCard(property: Property) {
   const { toggle, isFavorite } = useFavorites();
   const { language, t } = useLanguage();
   const fav = isFavorite(property.id);
+  const { title: displayTitle } = getLocalizedProperty(property, language);
   // Tworzymy slug SEO: np. "piekny-dom-w-tychach-123456"
   const slug = `${createSlug(property.title)}-${property.id}`;
 
@@ -40,7 +42,7 @@ export function PropertyCard(property: Property) {
       <div className="card-image-wrapper">
         <img
           src={cardImage}
-          alt={property.title}
+          alt={displayTitle}
           className="card-image"
           loading="lazy"
           style={{ objectPosition: 'center center' }}
@@ -113,7 +115,7 @@ export function PropertyCard(property: Property) {
 
       <div className="card-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--color-text-main)', margin: 0 }}>{property.title}</h3>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--color-text-main)', margin: 0 }}>{displayTitle}</h3>
           <span style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '1rem', whiteSpace: 'nowrap' }}>{formattedPrice}</span>
         </div>
 

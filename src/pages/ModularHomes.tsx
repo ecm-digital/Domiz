@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { useLanguage } from '../context/useLanguage';
 import {
     Clock, Leaf, CheckCircle, ArrowRight,
     Phone, ChevronRight, ShieldCheck, Ruler
@@ -45,11 +46,12 @@ const PROCESS_STEPS = [
 
 export function ModularHomes() {
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     return (
         <div style={{ paddingTop: 'var(--header-height)', minHeight: '100vh' }}>
             <div className="container" style={{ paddingTop: '1rem' }}>
-                <Breadcrumbs items={[{ label: 'Domy modułowe' }]} />
+                <Breadcrumbs items={[{ label: t('nav.modular') }]} />
             </div>
             {/* Hero */}
             <section style={{

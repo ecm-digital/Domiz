@@ -5,27 +5,34 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/og-image.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111113" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Domiz CRM" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/pwa/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Primary Meta Tags -->
-  <title>Domiz Homes - Biuro Nieruchomości Tłuszcz, Wołomin</title>
-  <meta name="title" content="Domiz Homes - Biuro Nieruchomości Tłuszcz, Wołomin" />
+  <title>Nieruchomości Śląsk i powiat wołomiński | Domiz Homes</title>
+  <meta name="title" content="Nieruchomości Śląsk i powiat wołomiński | Domiz Homes" />
   <meta name="description"
-    content="Szukasz domu lub działki w Tłuszczu? Domiz Homes to Twoje lokalne biuro nieruchomości. Profesjonalna sprzedaż, kupno i wynajem. Sprawdź oferty!" />
+    content="Domy i mieszkania na Śląsku oraz w powiecie wołomińskim. Sprawdź aktualne oferty i skorzystaj ze wsparcia Domiz Homes." />
   <meta name="robots" content="index, follow" />
   <meta name="keywords"
-    content="nieruchomości tłuszcz, biuro nieruchomości, domy na sprzedaż tłuszcz, działki tłuszcz, agencja nieruchomości wołomin, domiz homes" />
+    content="nieruchomości Śląsk, mieszkania Katowice, domy Chorzów, nieruchomości Tłuszcz, powiat wołomiński, Domiz Homes" />
   <link rel="canonical" href="https://domizhomes.com/" />
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="pl_PL" />
   <meta property="og:url" content="https://domizhomes.com/" />
-  <meta property="og:title" content="Domiz Homes - Biuro Nieruchomości Tłuszcz" />
+  <meta property="og:title" content="Nieruchomości Śląsk i powiat wołomiński | Domiz Homes" />
   <meta property="og:description"
-    content="Szukasz domu lub działki w Tłuszczu? Domiz Homes to Twoje lokalne biuro nieruchomości. Sprawdź oferty!" />
+    content="Domy i mieszkania na Śląsku oraz w powiecie wołomińskim. Zobacz aktualne oferty Domiz Homes." />
   <meta property="og:image" content="https://domizhomes.com/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -33,8 +40,8 @@
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
   <meta property="twitter:url" content="https://domizhomes.com/" />
-  <meta property="twitter:title" content="Domiz Homes - Biuro Nieruchomości Tłuszcz" />
-  <meta property="twitter:description" content="Szukasz domu lub działki w Tłuszczu? Sprawdź oferty Domiz Homes!" />
+  <meta property="twitter:title" content="Nieruchomości Śląsk i powiat wołomiński | Domiz Homes" />
+  <meta property="twitter:description" content="Domy i mieszkania na Śląsku oraz w powiecie wołomińskim." />
   <meta property="twitter:image" content="https://domizhomes.com/og-image.png" />
 
   <!-- JSON-LD Structured Data -->
@@ -43,7 +50,7 @@
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
     "name": "Domiz Homes",
-    "description": "Biuro nieruchomości. Sprzedaż, kupno i wynajem domów, mieszkań oraz działek w Tłuszczu i powiecie wołomińskim.",
+    "description": "Oferty domów i mieszkań na Śląsku oraz w powiecie wołomińskim. Wsparcie w zakupie, sprzedaży i finansowaniu nieruchomości.",
     "url": "https://domizhomes.com",
     "telephone": "+48 517 303 400",
     "email": "hello@domizhomes.com",
@@ -54,11 +61,10 @@
       "postalCode": "00-838",
       "addressCountry": "PL"
     },
-    "areaServed": {
-      "@type": "GeoCircle",
-      "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 52.4064, "longitude": 21.4470 },
-      "geoRadius": "50000"
-    }
+    "areaServed": [
+      { "@type": "AdministrativeArea", "name": "województwo śląskie" },
+      { "@type": "AdministrativeArea", "name": "powiat wołomiński" }
+    ]
   }
   </script>
 </head>

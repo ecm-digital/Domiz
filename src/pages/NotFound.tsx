@@ -1,9 +1,11 @@
 
 import { Search, Home, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/useLanguage';
 
 export function NotFound() {
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     return (
         <div style={{
@@ -26,18 +28,18 @@ export function NotFound() {
             </div>
 
             <h1 style={{ marginBottom: '1rem', fontSize: '3rem', fontWeight: 'bold' }}>404</h1>
-            <h2 style={{ marginBottom: '1.5rem', color: 'var(--color-text-secondary)' }}>Strona nie zostałanaleziona</h2>
+            <h2 style={{ marginBottom: '1.5rem', color: 'var(--color-text-secondary)' }}>{t('notFound.title')}</h2>
 
             <p style={{ maxWidth: '500px', marginBottom: '2.5rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-                Ups! Wygląda na to, że strona, której szukasz, nie istnieje lub została przeniesiona.
+                {t('notFound.description')}
             </p>
 
             <div style={{ display: 'flex', gap: '1rem' }}>
                 <button onClick={() => navigate('/')} className="btn-primary">
-                    <Home size={18} /> Strona Główna
+                    <Home size={18} /> {t('notFound.home')}
                 </button>
                 <button onClick={() => navigate(-1)} className="btn-secondary">
-                    <ArrowLeft size={18} /> Powrót
+                    <ArrowLeft size={18} /> {t('notFound.back')}
                 </button>
             </div>
         </div>

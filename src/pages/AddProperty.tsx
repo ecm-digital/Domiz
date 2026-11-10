@@ -294,7 +294,7 @@ export function AddProperty() {
                                             </label>
                                             <input
                                                 type="text"
-                                                placeholder="np. Tłuszcz, ul. Warszawska"
+                                                placeholder="np. Katowice, ul. Zadole lub Tłuszcz, ul. Warszawska"
                                                 style={inputStyle}
                                                 value={form.location}
                                                 onChange={e => update('location', e.target.value)}

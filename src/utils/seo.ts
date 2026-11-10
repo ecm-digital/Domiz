@@ -12,29 +12,59 @@ export type SeoConfig = {
 };
 
 export const defaultSeo: SeoConfig = {
-    title: 'Domiz Homes - Biuro Nieruchomości Tłuszcz, Wołomin',
-    description: 'Szukasz domu lub działki w Tłuszczu? Domiz Homes to Twoje lokalne biuro nieruchomości. Profesjonalna sprzedaż, kupno i wynajem. Sprawdź oferty!',
+    title: 'Nieruchomości Śląsk, Mazowsze i Dubaj | Domiz Homes',
+    description: 'Domy i mieszkania na Śląsku, Mazowszu oraz wybrane inwestycje w Dubaju. Sprawdź aktualne oferty i skorzystaj ze wsparcia Domiz Homes przy zakupie lub sprzedaży.',
     path: '/',
     image: DEFAULT_IMAGE,
-    keywords: 'nieruchomości tłuszcz, biuro nieruchomości, domy na sprzedaż tłuszcz, działki tłuszcz, agencja nieruchomości wołomin, domiz homes',
+    keywords: 'nieruchomości Śląsk, nieruchomości Mazowsze, nieruchomości Dubaj, mieszkania Katowice, domy Tłuszcz, inwestycje Dubaj, Domiz Homes',
 };
 
 export const routeSeo: Record<string, SeoConfig> = {
     '/': defaultSeo,
+    '/admin': {
+        title: 'Panel administratora | Domiz Homes',
+        description: 'Wewnętrzny panel zarządzania ofertami i procesem pozyskiwania Domiz Homes.',
+        path: '/admin',
+        noindex: true,
+    },
+    '/admin/login': {
+        title: 'Logowanie do panelu | Domiz Homes',
+        description: 'Logowanie do wewnętrznego panelu Domiz Homes.',
+        path: '/admin/login',
+        noindex: true,
+    },
+    '/panel-klienta': {
+        title: 'Panel właściciela | Domiz Homes',
+        description: 'Prywatny panel właściciela nieruchomości Domiz Homes.',
+        path: '/panel-klienta',
+        noindex: true,
+    },
+    '/panel-klienta/demo': {
+        title: 'Panel właściciela | Domiz Homes',
+        description: 'Prywatny panel właściciela nieruchomości Domiz Homes.',
+        path: '/panel-klienta/demo',
+        noindex: true,
+    },
+    '/panel-klienta/logowanie': {
+        title: 'Logowanie do panelu właściciela | Domiz Homes',
+        description: 'Logowanie do prywatnego panelu właściciela Domiz Homes.',
+        path: '/panel-klienta/logowanie',
+        noindex: true,
+    },
     '/oferty': {
-        title: 'Oferty nieruchomości - domy, mieszkania i działki | Domiz Homes',
-        description: 'Aktualne oferty Domiz Homes: domy, mieszkania i działki na sprzedaż lub wynajem w Tłuszczu, Wołominie i okolicach Warszawy.',
+        title: 'Oferty nieruchomości Śląsk, Mazowsze i Dubaj | Domiz Homes',
+        description: 'Przeglądaj domy i mieszkania na Śląsku, Mazowszu oraz wybrane inwestycje w Dubaju. Aktualne ceny, galerie i szczegółowe opisy.',
         path: '/oferty',
-        keywords: 'oferty nieruchomości, domy na sprzedaż, mieszkania na sprzedaż, działki na sprzedaż, nieruchomości Tłuszcz, nieruchomości Wołomin',
+        keywords: 'oferty nieruchomości Śląsk, nieruchomości Mazowsze, nieruchomości Dubaj, mieszkania Katowice, domy na sprzedaż, nieruchomości Tłuszcz, inwestycje Dubaj',
     },
     '/kalkulatory': {
-        title: 'Kalkulatory kredytu i kosztów budowy domu | Domiz Homes',
-        description: 'Oblicz orientacyjną ratę kredytu hipotecznego i koszt budowy domu. Praktyczne kalkulatory dla kupujących i budujących nieruchomość.',
+        title: 'Finansowanie nieruchomości z Credipass | Domiz Homes',
+        description: 'Wsparcie w finansowaniu zakupu, budowy i inwestycji w nieruchomości we współpracy z Credipass.',
         path: '/kalkulatory',
-        keywords: 'kalkulator kredytu hipotecznego, kalkulator budowy domu, koszt budowy domu, rata kredytu hipotecznego',
+        keywords: 'finansowanie nieruchomości, Credipass, kredyt hipoteczny, finansowanie budowy domu, rata kredytu',
     },
     '/blog': {
-        title: 'Blog o nieruchomościach, zakupie domu i rynku | Domiz Homes',
+        title: 'Blog o nieruchomościach i poradnik kupującego | Domiz Homes',
         description: 'Porady o zakupie domu, rynku nieruchomości, kredycie hipotecznym, inwestowaniu i smart home od Domiz Homes.',
         path: '/blog',
         type: 'article',
@@ -48,10 +78,10 @@ export const routeSeo: Record<string, SeoConfig> = {
         keywords: 'dom pod Warszawą, domy pod Warszawą, dom z garażem pod Warszawą, dom Tłuszcz, Sasanka XL Tłuszcz, dom z ogrodem Mazowieckie',
     },
     '/smart-home': {
-        title: 'Smart Home - inteligentny dom i automatyka | Domiz Homes',
-        description: 'Systemy smart home dla domów i mieszkań: oświetlenie, ogrzewanie, monitoring, alarmy, zamki elektroniczne i automatyka budynkowa.',
+        title: 'Smart Home Loxone | Domiz Homes',
+        description: 'Domiz Homes jest partnerem Loxone. Pomagamy tworzyć inteligentne domy dopasowane do potrzeb mieszkańców.',
         path: '/smart-home',
-        keywords: 'smart home, inteligentny dom, automatyka domowa, monitoring domu, inteligentne oświetlenie',
+        keywords: 'Loxone, partner Loxone, smart home, inteligentny dom, automatyka domowa',
     },
     '/dodaj-nieruchomosc': {
         title: 'Dodaj nieruchomość do sprzedaży | Domiz Homes',
@@ -122,7 +152,13 @@ export function setSeo(config: SeoConfig) {
 }
 
 export function getRouteSeo(pathname: string) {
-    return routeSeo[pathname] || {
+    const normalized = (pathname.replace(/\/+$/, '') || '/') as keyof typeof routeSeo;
+    if (routeSeo[pathname as keyof typeof routeSeo]) return routeSeo[pathname as keyof typeof routeSeo];
+    if (routeSeo[normalized]) return routeSeo[normalized];
+    if (normalized.startsWith('/panel-klienta')) {
+        return routeSeo['/panel-klienta'];
+    }
+    return {
         title: 'Strona nie znaleziona | Domiz Homes',
         description: 'Nie znaleziono strony. Wróć do aktualnych ofert nieruchomości Domiz Homes.',
         path: pathname,

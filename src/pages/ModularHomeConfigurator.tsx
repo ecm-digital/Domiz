@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { ArrowRight, Sliders, Send, ChevronLeft, ChevronRight, Eye, GitCompare, X, Calculator } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { useLanguage } from '../context/useLanguage';
 
 const WIZARD_STEPS = [
     { id: 1, title: 'Model domu', short: 'Model' },
@@ -264,6 +265,7 @@ function saveComparisons(list: ConfigSnapshot[]) {
 
 export function ModularHomeConfigurator() {
     const navigate = useNavigate();
+    const { t } = useLanguage();
     const [step, setStep] = useState(1);
     const [modelId, setModelId] = useState<string>('m35');
     const [foundationId, setFoundationId] = useState<string>('slab');
@@ -399,7 +401,7 @@ export function ModularHomeConfigurator() {
             <section style={{ padding: '2.5rem 0 3rem', position: 'relative' }}>
                 <div className="container">
                     <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-                        <Breadcrumbs items={[{ label: 'Domy modułowe', path: '/domy-modulowe' }, { label: 'Konfigurator' }]} />
+                        <Breadcrumbs items={[{ label: t('nav.modular'), path: '/domy-modulowe' }, { label: t('nav.configurator') }]} />
                         <div className="configurator-top-bar">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Sliders size={20} style={{ color: 'var(--color-primary)' }} />
