@@ -1,9 +1,9 @@
 import { useProperties } from '../../hooks/useProperties';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, getDoc, setDoc, onSnapshot, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, getDoc, setDoc, onSnapshot, serverTimestamp, Timestamp, where } from 'firebase/firestore';
 import { app, db } from '../../firebase';
 import { Loader2, Trash2, Edit, Plus, LogOut, Phone, Mail, MessageSquare, RefreshCw, LayoutDashboard, List, ExternalLink, Upload, BedDouble, Ruler, Building2, Download, Bell, BellRing, Sparkles, Camera, MapPin, X, MoreHorizontal, FileText, ChevronRight } from 'lucide-react';
 import { uploadImage } from '../../utils/uploadImage';
@@ -11,6 +11,9 @@ import { createSlug } from '../../utils/slugify';
 import type { Property } from '../../data/properties';
 import './AdminDashboard.css';
 import { ClientAccountCreator } from './ClientAccountCreator';
+import { AcquisitionCallCard } from './AcquisitionCallCard';
+import { CONSENT_TTL_MS, buildConsentLink, buildOwnerConsentFields, callbackDateToIso, consentCardStatus, consentForLead, formatCallNote, newConsentToken, stageAfterConsentLink, stageForCallResult } from './callCardLogic';
+import type { CallResultId, OwnerConsentLike } from './callCardLogic';
 
 type PipelineStage = 'new' | 'qualified' | 'contacted' | 'presentation' | 'negotiation' | 'won' | 'lost';
 type StoredLeadStatus = PipelineStage | 'closed';
@@ -318,6 +321,10 @@ interface PropertyLead {
         pricePerM2?: string; heating?: string; floor?: string; rent?: string; finishCondition?: string; market?: string; ownership?: string; availableFrom?: string; advertiserType?: string; buildingElevator?: string; buildingType?: string; windows?: string;
     };
     lastContactAt?: string;
+    callResult?: CallResultId;
+    callbackAt?: string;
+    lastCallAt?: string;
+    ownerConsentId?: string;
     auditedAt?: string;
     auditSummary?: string;
     auditData?: AuditDraft;
@@ -499,6 +506,9 @@ export const AdminDashboard = () => {
     const [newLead, setNewLead] = useState<NewLeadDraft>(EMPTY_NEW_LEAD);
     const [creatingLead, setCreatingLead] = useState(false);
     const [propertyLeads, setPropertyLeads] = useState<PropertyLead[]>([]);
+    const propertyLeadsRef = useRef(propertyLeads);
+    propertyLeadsRef.current = propertyLeads;
+    const [ownerConsentsById, setOwnerConsentsById] = useState<Record<string, OwnerConsentLike>>({});
     const [propertyLeadsLoading, setPropertyLeadsLoading] = useState(true);
     const [acquisitionFilter, setAcquisitionFilter] = useState<'all' | AcquisitionStage>('all');
     const [acquisitionView, setAcquisitionView] = useState<'list' | 'board'>('list');
@@ -694,6 +704,19 @@ export const AdminDashboard = () => {
 
     useEffect(() => {
         void loadPropertyLeads();
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'ownerConsents'), (snapshot) => {
+            const next: Record<string, OwnerConsentLike> = {};
+            snapshot.forEach((item) => {
+                next[item.id] = { id: item.id, ...(item.data() as Omit<OwnerConsentLike, 'id'>) };
+            });
+            setOwnerConsentsById(next);
+        }, (error) => {
+            console.error('Błąd odczytu zgód właścicieli:', error);
+        });
+        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -1020,6 +1043,72 @@ export const AdminDashboard = () => {
     };
 
     const makeStageHistory = (stage: AcquisitionStage, note = ''): AcquisitionStageHistory => ({ id: crypto.randomUUID(), stage, label: ACQUISITION_STAGES.find((option) => option.id === stage)?.label || stage, note, createdAt: new Date().toISOString(), author: user?.email || 'Domiz Homes' });
+    const callAuthor = user?.email || 'Tomasz Gnat';
+    const patchPropertyLead = (id: string, patch: Partial<PropertyLead>) => {
+        setPropertyLeads((previous) => previous.map((item) => item.id === id ? { ...item, ...patch } : item));
+        setViewingPropertyLead((item) => item?.id === id ? { ...item, ...patch } : item);
+    };
+    const saveLeadPhone = async (id: string, phone: string) => {
+        const ownerPhone = phone.trim();
+        const updatedAt = new Date().toISOString();
+        await updateDoc(doc(db, 'acquisitionListings', id), { ownerPhone, updatedAt });
+        patchPropertyLead(id, { ownerPhone, updatedAt });
+    };
+    const saveCallCardResult = async (id: string, input: { result: CallResultId; note: string; callbackDate: string }) => {
+        const lead = propertyLeadsRef.current.find((item) => item.id === id);
+        if (!lead) throw new Error('Brak pozysku');
+        const now = new Date().toISOString();
+        const stage = stageForCallResult(lead.stage, input.result, Boolean(input.callbackDate));
+        const note = formatCallNote(input.result, input.note, input.callbackDate);
+        const stageHistory = [...(lead.stageHistory || []), makeStageHistory(stage, note)];
+        const activities = [...(lead.activities || []), { id: crypto.randomUUID(), type: 'call' as const, summary: note, createdAt: now, author: callAuthor }];
+        const updates: Partial<PropertyLead> = { callResult: input.result, lastCallAt: now, lastContactAt: now, updatedAt: now, stage, stageHistory, activities };
+        if (input.callbackDate) {
+            updates.callbackAt = callbackDateToIso(input.callbackDate);
+            updates.tasks = [...(lead.tasks || []), { id: crypto.randomUUID(), title: 'Oddzwonić do właściciela', dueDate: input.callbackDate, owner: lead.assignee || callAuthor, status: 'open', createdAt: now }];
+        }
+        await updateDoc(doc(db, 'acquisitionListings', id), updates);
+        patchPropertyLead(id, updates);
+    };
+    const prepareOwnerConsentLink = async (id: string) => {
+        const lead = propertyLeadsRef.current.find((item) => item.id === id);
+        if (!lead) throw new Error('Brak pozysku');
+        let known = consentForLead(lead, ownerConsentsById);
+        if (!known && lead.ownerConsentId) {
+            const snap = await getDoc(doc(db, 'ownerConsents', lead.ownerConsentId));
+            if (snap.exists()) known = { id: snap.id, ...(snap.data() as Omit<OwnerConsentLike, 'id'>) };
+        }
+        const knownStatus = consentCardStatus(known);
+        if (known?.id && (knownStatus === 'link_sent' || knownStatus === 'confirmed_site' || knownStatus === 'confirmed_social')) {
+            return { token: known.id, link: buildConsentLink(known.id), reused: true };
+        }
+        const token = newConsentToken();
+        const expiresAt = Timestamp.fromMillis(Date.now() + CONSENT_TTL_MS);
+        const writeConsent = (includeLeadId: boolean) => setDoc(doc(db, 'ownerConsents', token), {
+            ...buildOwnerConsentFields(lead, includeLeadId),
+            createdAt: serverTimestamp(),
+            expiresAt,
+        });
+        try {
+            await writeConsent(true);
+        } catch (error) {
+            const code = typeof error === 'object' && error && 'code' in error ? String((error as { code: unknown }).code) : '';
+            if (!code.includes('permission-denied')) throw error;
+            await writeConsent(false);
+        }
+        const now = new Date().toISOString();
+        const stage = stageAfterConsentLink(lead.stage);
+        const stageHistory = [...(lead.stageHistory || []), makeStageHistory(stage, 'Przygotowano link zgody do SMS-a. Wysyłka zostaje na telefonie Tomasza.')];
+        const activities = [...(lead.activities || []), { id: crypto.randomUUID(), type: 'sms' as const, summary: 'Przygotowano SMS z linkiem zgody (nie wysłano automatycznie).', createdAt: now, author: callAuthor }];
+        const updates: Partial<PropertyLead> = { ownerConsentId: token, stage, stageHistory, activities, lastContactAt: now, updatedAt: now };
+        await updateDoc(doc(db, 'acquisitionListings', id), updates);
+        patchPropertyLead(id, updates);
+        setOwnerConsentsById((previous) => ({
+            ...previous,
+            [token]: { id: token, status: 'oczekuje', acquisitionListingId: lead.id, expiresAt: { toMillis: () => expiresAt.toMillis() } },
+        }));
+        return { token, link: buildConsentLink(token), reused: false };
+    };
 
     const setPropertyLeadStage = async (id: string, stage: AcquisitionStage) => {
         const current = propertyLeads.find((item) => item.id === id);
@@ -3078,6 +3167,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                         <label className="acquisition-card__assignee"><span>Opiekun oferty</span><select aria-label={`Opiekun: ${item.title || 'pozysk'}`} value={item.assignee || ''} disabled={savingAssigneeId === item.id} onChange={(event) => void setPropertyLeadAssignee(item.id, event.target.value)}><option value="">Nieprzypisany</option>{PROPERTY_CARETAKERS.map((caretaker) => <option key={caretaker} value={caretaker}>{caretaker}</option>)}</select>{savingAssigneeId === item.id && <small>Zapisywanie…</small>}</label>
                                         <div className="acquisition-card__next-step" style={{ background: stage.background, color: stage.color }}><span>Następny krok</span>{getAcquisitionPrompt(item.stage || 'new')}</div>
                                         {missingData.length > 0 && <div className="acquisition-card__missing">Do uzupełnienia: {missingData.join(' · ')}</div>}
+                                        <AcquisitionCallCard lead={item} consent={consentForLead(item, ownerConsentsById)} onSavePhone={(phone) => saveLeadPhone(item.id, phone)} onSaveResult={(input) => saveCallCardResult(item.id, input)} onPrepareConsent={() => prepareOwnerConsentLink(item.id)} />
                                         <div className="acquisition-card__footer">
                                             <div className="acquisition-card__actions">
                                                 <button className="acquisition-card__primary-action" type="button" onClick={() => setViewingPropertyLead(item)}>Otwórz pozysk</button>
@@ -3142,6 +3232,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}><div><div style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', marginBottom: '0.35rem' }}>Podgląd potencjalnej oferty</div><h2 style={{ margin: 0 }}>{item.title || 'Ogłoszenie z Otodom'}</h2><div style={{ color: 'var(--color-text-secondary)', marginTop: '0.35rem' }}>{[item.location, item.price, item.areaM2 ? `${item.areaM2} m²` : '', item.rooms ? `${item.rooms} pok.` : ''].filter(Boolean).join(' · ')}</div></div><button type="button" aria-label="Zamknij" onClick={() => setViewingPropertyLead(null)} style={{ border: 0, background: 'transparent', fontSize: '1.5rem', cursor: 'pointer' }}>×</button></div>
                                 <label className="acquisition-preview__assignee"><span>Opiekun oferty</span><select aria-label="Opiekun oferty" value={item.assignee || ''} disabled={savingAssigneeId === item.id} onChange={(event) => void setPropertyLeadAssignee(item.id, event.target.value)}><option value="">Nieprzypisany</option>{PROPERTY_CARETAKERS.map((caretaker) => <option key={caretaker} value={caretaker}>{caretaker}</option>)}</select>{savingAssigneeId === item.id && <small>Zapisywanie…</small>}</label>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem', padding: '0.75rem 0.85rem', border: '1px solid #bbf7d0', borderRadius: '0.6rem', background: '#f0fdf4' }}><div><div style={{ color: '#166534', fontSize: '0.73rem', fontWeight: 800, textTransform: 'uppercase' }}>Kontakt do właściciela</div><div style={{ marginTop: '0.15rem', fontWeight: 700 }}>{item.ownerName || 'Imię do uzupełnienia'}{item.ownerPhone && <span style={{ color: '#475569', fontWeight: 500 }}> · {item.ownerPhone}</span>}</div></div>{item.ownerPhone ? <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}><a href={`tel:${item.ownerPhone.replace(/\s/g, '')}`} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>Zadzwoń</a><a href={`sms:${item.ownerPhone.replace(/\s/g, '')}`} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>SMS</a><button type="button" onClick={() => void copyAcquisitionText(smsScript, 'SMS')} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Kopiuj SMS</button></div> : <button type="button" onClick={() => { setViewingPropertyLead(null); openPropertyLeadEditor(item); }} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Dodaj kontakt</button>}</div>
+                                <AcquisitionCallCard lead={item} consent={consentForLead(item, ownerConsentsById)} onSavePhone={(phone) => saveLeadPhone(item.id, phone)} onSaveResult={(input) => saveCallCardResult(item.id, input)} onPrepareConsent={() => prepareOwnerConsentLink(item.id)} />
                                 <button type="button" onClick={() => openCallOutcome(item)} style={{ marginTop: '0.65rem', padding: '0.45rem 0.6rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: '#f0fdf4', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Zapisz wynik rozmowy</button>
                                 {draft?.images?.length ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.65rem', marginTop: '1rem' }}>{draft.images.map((image, index) => <img key={image} src={image} alt={`Zdjęcie oferty ${index + 1}`} style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '0.5rem' }} />)}</div> : null}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: '0.7rem', marginTop: '1rem' }}>

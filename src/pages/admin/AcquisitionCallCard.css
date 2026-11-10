@@ -1,0 +1,171 @@
+.call-card {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid #99f6e4;
+  border-radius: 16px;
+  background: #f0fdfa;
+  color: #134e4a;
+}
+
+.call-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.call-card__head h3,
+.call-card__sms h4 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.call-card__head p,
+.call-card__meta,
+.call-card__sms p,
+.call-card__link {
+  margin: 0.2rem 0 0;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.call-card__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+.call-card__badge--none,
+.call-card__badge--declined,
+.call-card__badge--expired { background: #e2e8f0; color: #334155; }
+.call-card__badge--link_sent { background: #fef3c7; color: #92400e; }
+.call-card__badge--confirmed_site { background: #dcfce7; color: #166534; }
+.call-card__badge--confirmed_social { background: #ccfbf1; color: #0f766e; }
+.call-card__badge--withdrawn { background: #fee2e2; color: #991b1b; }
+
+.call-card__phone,
+.call-card__results,
+.call-card__sms {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.call-card__field {
+  display: grid;
+  gap: 0.28rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.call-card__field input,
+.call-card__field textarea,
+.call-card__tap {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.call-card__field input,
+.call-card__field textarea {
+  padding: 0.7rem 0.75rem;
+  border: 1.5px solid #99f6e4;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.call-card__field textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.call-card__tap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid #0f766e;
+  background: #fff;
+  color: #0f766e;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.call-card__tap:disabled,
+.call-card__tap--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.call-card__tap--call,
+.call-card__tap--save,
+.call-card__tap--sms {
+  background: #0f766e;
+  color: #fff;
+}
+
+.call-card__results button {
+  min-height: 48px;
+  padding: 0.65rem 0.75rem;
+  border: 1.5px solid #99f6e4;
+  border-radius: 12px;
+  background: #fff;
+  color: #134e4a;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.call-card__results button[aria-pressed="true"] {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #fff;
+}
+
+.call-card__sms {
+  padding-top: 0.35rem;
+  border-top: 1px dashed #99f6e4;
+}
+
+.call-card__link {
+  word-break: break-all;
+  font-weight: 650;
+  color: #0f766e;
+}
+
+.call-card__error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@media (min-width: 800px) {
+  .call-card__results {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .call-card__results button:nth-child(3),
+  .call-card__results button:last-child {
+    grid-column: 1 / -1;
+  }
+}
