@@ -3,6 +3,7 @@ import { AcquisitionCallCard } from './AcquisitionCallCard';
 import { consentCardStatus } from './callCardLogic';
 import type { CallResultId, ConsentUiStatus, OwnerConsentLike } from './callCardLogic';
 import './AdminDashboard.css';
+import './admin-theme.css';
 
 const FUTURE = Date.now() + 7 * 24 * 60 * 60 * 1000;
 

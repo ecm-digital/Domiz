@@ -10,6 +10,7 @@ import { uploadImage } from '../../utils/uploadImage';
 import { createSlug } from '../../utils/slugify';
 import type { Property } from '../../data/properties';
 import './AdminDashboard.css';
+import './admin-theme.css';
 import { ClientAccountCreator } from './ClientAccountCreator';
 import { AcquisitionCallCard } from './AcquisitionCallCard';
 import { CONSENT_TTL_MS, buildConsentLink, buildOwnerConsentFields, callbackDateToIso, consentCardStatus, consentForLead, formatCallNote, newConsentToken, stageAfterConsentLink, stageForCallResult } from './callCardLogic';
@@ -2437,7 +2438,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
     return (
         <div className="container admin-dashboard" style={{ paddingTop: '120px', paddingBottom: '4rem', minHeight: '100vh' }}>
             <div className="admin-dashboard__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div><div className="admin-dashboard__eyebrow">DOMIZ HOMES CRM</div><h1>Centrum pracy</h1><p>Oferty, pozyski i działania zespołu w jednym miejscu.</p></div>
+                <div><div className="admin-dashboard__eyebrow">DOMIZ HOMES</div><h1>Centrum pracy</h1><p>Oferty, pozyski i działania zespołu w jednym miejscu.</p><nav className="admin-shortcuts" aria-label="Skróty"><a href="/admin/zgody">Zgody właścicieli</a><a href="/admin/wlasciciele">Właściciele do kontaktu</a></nav></div>
                 <div className="admin-dashboard__header-actions" style={{ display: 'flex', gap: '1rem' }}>
                     <button
                         className="btn-primary"
@@ -2448,17 +2449,8 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                     </button>
                     <button
                         onClick={() => void loadPropertyLeads()}
-                        style={{
-                            padding: '0.75rem 1rem',
-                            borderRadius: '0.5rem',
-                            border: '1px solid var(--color-border)',
-                            background: 'white',
-                            color: 'var(--color-text-main)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}
+                        className="admin-btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                     >
                         <RefreshCw size={18} /> Odśwież pozyskania
                     </button>
@@ -2480,17 +2472,8 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                     </button>}
                     <button
                         onClick={() => logout().then(() => navigate('/admin/login'))}
-                        style={{
-                            padding: '0.75rem 1rem',
-                            borderRadius: '0.5rem',
-                            border: '1px solid #fee2e2',
-                            background: '#fef2f2',
-                            color: '#dc2626',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}
+                        className="admin-btn-danger"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                     >
                         <LogOut size={20} /> Wyloguj
                     </button>
@@ -2693,7 +2676,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
             })()}
 
             {activeTab === 'offers' && (
-                <div className="glass-panel" style={{ overflowX: 'auto' }}>
+                <div className="glass-panel admin-offers" style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -2804,9 +2787,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                     </table>
 
                     {properties.length === 0 && (
-                        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                            Brak ofert w bazie. Dodaj pierwszą!
-                        </div>
+                        <div className="admin-empty"><strong>Brak ofert</strong><span>Dodaj pierwszą nieruchomość, gdy będzie gotowa do opisania.</span></div>
                     )}
                 </div>
             )}
@@ -3135,7 +3116,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                     <style>{'[title="Skopiuj link"], [title="Obserwuj"] { display: none !important; }'}</style>
                     <div className="acquisition-workspace__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                         <div><div className="admin-dashboard__eyebrow">PIPELINE POZYSKANIA</div><h2 style={{ margin: 0, fontSize: '1.2rem' }}>Pozyskiwanie ofert</h2><p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Potencjalne nieruchomości z Otodom, OLX i Facebooka — od analizy ogłoszenia do pozyskania umowy.</p><div className="acquisition-source-filter"><span>Źródło</span><div role="group" aria-label="Źródło pozysku">{(['all', 'Otodom', 'OLX', 'Facebook'] as const).map((source) => <button key={source} type="button" aria-pressed={acquisitionSourceFilter === source} onClick={() => setAcquisitionSourceFilter(source)}>{source === 'all' ? 'Wszystkie' : source}</button>)}</div></div></div>
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}><div style={{ display: 'flex', padding: '0.2rem', border: '1px solid var(--color-border)', borderRadius: '0.55rem', background: 'white' }}><button type="button" onClick={() => setAcquisitionView('list')} style={{ padding: '0.4rem 0.55rem', border: 0, borderRadius: '0.35rem', background: acquisitionView === 'list' ? '#e0f2fe' : 'transparent', color: acquisitionView === 'list' ? '#0369a1' : '#64748b', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Lista</button><button type="button" onClick={() => setAcquisitionView('board')} style={{ padding: '0.4rem 0.55rem', border: 0, borderRadius: '0.35rem', background: acquisitionView === 'board' ? '#e0f2fe' : 'transparent', color: acquisitionView === 'board' ? '#0369a1' : '#64748b', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Proces</button></div><button type="button" onClick={exportAcquisitionsCsv} disabled={!filteredPropertyLeads.length} style={{ padding: '0.5rem 0.65rem', border: '1px solid #bfdbfe', borderRadius: '0.5rem', background: 'white', color: '#1d4ed8', cursor: filteredPropertyLeads.length ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.8rem', opacity: filteredPropertyLeads.length ? 1 : 0.5 }}>Eksport CSV</button><button onClick={() => setIsSourceImportOpen(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Plus size={18} /> Dodaj nowy pozysk</button></div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}><div style={{ display: 'flex', padding: '0.2rem', border: '1px solid var(--color-border)', borderRadius: '0.55rem', background: 'white' }}><button type="button" className={acquisitionView === 'list' ? 'admin-segment is-on' : 'admin-segment'} onClick={() => setAcquisitionView('list')}>Lista</button><button type="button" className={acquisitionView === 'board' ? 'admin-segment is-on' : 'admin-segment'} onClick={() => setAcquisitionView('board')}>Proces</button></div><button type="button" onClick={exportAcquisitionsCsv} disabled={!filteredPropertyLeads.length} style={{ padding: '0.5rem 0.65rem', border: '1px solid #bfdbfe', borderRadius: '0.5rem', background: 'white', color: '#1d4ed8', cursor: filteredPropertyLeads.length ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.8rem', opacity: filteredPropertyLeads.length ? 1 : 0.5 }}>Eksport CSV</button><button onClick={() => setIsSourceImportOpen(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Plus size={18} /> Dodaj nowy pozysk</button></div>
                     </div>
                     <div className="acquisition-toolbar" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '1rem' }}><input aria-label="Szukaj pozysków" value={acquisitionSearch} onChange={(event) => setAcquisitionSearch(event.target.value)} placeholder="Szukaj po tytule, adresie lub cenie..." style={{ flex: '1 1 300px', padding: '0.65rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem' }} /><button type="button" aria-pressed={privateOnly} onClick={() => setPrivateOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: privateOnly ? '1px solid #047857' : '1px solid var(--color-border)', background: privateOnly ? '#ecfdf5' : 'white', color: privateOnly ? '#047857' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Tylko prywatne</button><button type="button" aria-pressed={attentionOnly} onClick={() => setAttentionOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: attentionOnly ? '1px solid #b91c1c' : '1px solid var(--color-border)', background: attentionOnly ? '#fef2f2' : 'white', color: attentionOnly ? '#b91c1c' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Wymaga działania</button><button type="button" aria-pressed={incompleteOnly} onClick={() => setIncompleteOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: incompleteOnly ? '1px solid #b45309' : '1px solid var(--color-border)', background: incompleteOnly ? '#fffbeb' : 'white', color: incompleteOnly ? '#b45309' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Braki danych</button><select aria-label="Filtr opiekuna" value={acquisitionAssigneeFilter} onChange={(event) => setAcquisitionAssigneeFilter(event.target.value as typeof acquisitionAssigneeFilter)} style={{ padding: '0.65rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem', background: 'white', color: 'var(--color-text-main)', cursor: 'pointer' }}><option value="all">Wszyscy opiekunowie</option><option value="unassigned">Bez opiekuna</option>{PROPERTY_CARETAKERS.map((caretaker) => <option key={caretaker} value={caretaker}>{caretaker}</option>)}</select><select aria-label="Sortowanie pozysków" value={acquisitionSort} onChange={(event) => setAcquisitionSort(event.target.value as typeof acquisitionSort)} style={{ padding: '0.65rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem', background: 'white', color: 'var(--color-text-main)', cursor: 'pointer' }}><option value="newest">Najnowsze</option><option value="deadline">Najbliższy termin</option><option value="price_desc">Cena: malejąco</option><option value="price_asc">Cena: rosnąco</option></select></div>
                     <div className="acquisition-stage-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.65rem', marginBottom: '1rem' }}>

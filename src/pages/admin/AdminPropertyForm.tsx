@@ -6,6 +6,7 @@ import { db } from '../../firebase';
 import { uploadImage } from '../../utils/uploadImage';
 // import { useAuth } from '../../context/AuthContext'; // Protected route handles auth check
 import { Loader2, ArrowLeft, Upload } from 'lucide-react';
+import './admin-theme.css';
 
 const TYPES = ['dom', 'mieszkanie', 'dzialka'];
 const STATUSES = ['sprzedaz', 'wynajem'];
