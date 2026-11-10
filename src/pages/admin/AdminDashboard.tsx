@@ -2438,7 +2438,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
     return (
         <div className="container admin-dashboard" style={{ paddingTop: '120px', paddingBottom: '4rem', minHeight: '100vh' }}>
             <div className="admin-dashboard__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div><div className="admin-dashboard__eyebrow">DOMIZ HOMES</div><h1>Centrum pracy</h1><p>Oferty, pozyski i działania zespołu w jednym miejscu.</p><nav className="admin-shortcuts" aria-label="Skróty"><a href="/admin/zgody">Zgody właścicieli</a><a href="/admin/wlasciciele">Właściciele do kontaktu</a></nav></div>
+                <div><div className="admin-dashboard__eyebrow">DOMIZ HOMES</div><h1>Centrum pracy</h1><p>Oferty, pozyski i działania zespołu w jednym miejscu.</p></div>
                 <div className="admin-dashboard__header-actions" style={{ display: 'flex', gap: '1rem' }}>
                     <button
                         className="btn-primary"
@@ -2512,7 +2512,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 </div>
             )}
 
-            <div className="admin-tabs" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div className="admin-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '1rem' }}>
                 <button
                     aria-pressed={activeTab === 'dashboard'}
                     onClick={() => setActiveTab('dashboard')}
@@ -2636,6 +2636,9 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 >
                     Konta klientów
                 </button>
+                <a href="/admin/wlasciciele">Właściciele do kontaktu</a>
+                <a href="/admin/kawalerki">Kawalerki z ogródkiem</a>
+                <a href="/admin/zgody">Zgody</a>
                 <button
                     aria-pressed={activeTab === 'settings'}
                     onClick={() => setActiveTab('settings')}
