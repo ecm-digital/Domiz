@@ -2637,7 +2637,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                     Konta klientów
                 </button>
                 <a href="/admin/wlasciciele">Właściciele do kontaktu</a>
-                <a href="/admin/kawalerki">Kawalerki z ogródkiem</a>
+                <a href="/admin/kawalerki">Mieszkania z ogródkiem – Warszawa</a>
                 <a href="/admin/zgody">Zgody</a>
                 <button
                     aria-pressed={activeTab === 'settings'}
