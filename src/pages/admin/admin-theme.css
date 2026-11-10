@@ -1,0 +1,448 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,460;9..144,560&display=swap");
+
+/* Panel administratora. Publiczne strony nie mają .app--admin. */
+body:has(.app--admin) {
+  --admin-ink: #1c1915;
+  --admin-muted: #5c534c;
+  --admin-faint: #8a8178;
+  --admin-paper: #f7f4ef;
+  --admin-paper-2: #efe8df;
+  --admin-white: #fffcf8;
+  --admin-line: rgba(28, 25, 21, 0.12);
+  --admin-line-strong: rgba(28, 25, 21, 0.22);
+  --admin-cream: #f7f4ef;
+  --admin-danger: #8f2d2d;
+  --admin-danger-bg: #f8ecea;
+  --admin-ok: #1d5c3d;
+  --admin-ok-bg: #e7f2eb;
+  --admin-warn: #8a5a12;
+  --admin-warn-bg: #f8f1e4;
+  --admin-display: Fraunces, "Times New Roman", serif;
+  --admin-ui: "Plus Jakarta Sans", system-ui, sans-serif;
+  --color-text-main: #1c1915;
+  --color-text-secondary: #5c534c;
+  --color-text-muted: #6f675f;
+  --color-border: rgba(28, 25, 21, 0.14);
+  --color-primary: #1c1915;
+  --color-primary-dark: #1c1915;
+  --color-bg-light: #f7f4ef;
+  background: var(--admin-paper);
+  color: var(--admin-ink);
+  font-family: var(--admin-ui);
+}
+
+.app--admin {
+  background: var(--admin-paper);
+  color: var(--admin-ink);
+  font-family: var(--admin-ui);
+  min-height: 100vh;
+}
+
+.app--admin .admin-dashboard,
+.app--admin .admin-property-form-page,
+.app--admin .admin-login {
+  padding-top: 1.25rem !important;
+  padding-bottom: 3rem !important;
+  color: var(--admin-ink);
+}
+
+.app--admin .admin-dashboard {
+  max-width: 1440px;
+}
+
+.app--admin h1,
+.app--admin h2,
+.app--admin .admin-property-form-page h1 {
+  font-family: var(--admin-display);
+  font-weight: 460;
+  letter-spacing: -0.03em;
+  color: var(--admin-ink);
+}
+
+.app--admin .admin-dashboard__header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 0;
+  margin-bottom: 0.85rem !important;
+  padding: 0.9rem 1rem !important;
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 18px !important;
+  background: rgba(247, 244, 239, 0.92) !important;
+  box-shadow: 0 10px 28px rgba(28, 25, 21, 0.05) !important;
+  backdrop-filter: blur(16px);
+}
+
+.app--admin .admin-dashboard__header h1 {
+  font-size: clamp(1.7rem, 3vw, 2.35rem) !important;
+  line-height: 1.05;
+}
+
+.app--admin .admin-dashboard__eyebrow {
+  color: var(--admin-faint) !important;
+  font-family: var(--admin-ui);
+  font-size: 0.68rem !important;
+  font-weight: 700;
+  letter-spacing: 0.16em !important;
+}
+
+.app--admin .admin-tabs {
+  position: sticky;
+  top: 0.4rem;
+  z-index: 30;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+  width: 100% !important;
+  max-width: none !important;
+  overflow: visible !important;
+  margin: 0 0 1rem !important;
+  padding: 0.35rem !important;
+  gap: 0.35rem !important;
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 252, 248, 0.94) !important;
+  box-shadow: 0 8px 24px rgba(28, 25, 21, 0.04) !important;
+}
+
+.app--admin .admin-tabs > button,
+.app--admin .admin-tabs > button:hover,
+.app--admin .admin-tabs > a,
+.app--admin .admin-tabs > a:hover,
+.app--admin .admin-tab-video {
+  flex: 0 1 auto;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px !important;
+  padding: 0.45rem 0.85rem !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--admin-muted) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.app--admin .admin-tabs > button[aria-pressed="true"],
+.app--admin .admin-tab-video.is-active {
+  background: var(--admin-ink) !important;
+  color: var(--admin-cream) !important;
+}
+
+.app--admin .btn-primary,
+.app--admin .acquisition-workspace__header .btn-primary,
+.app--admin .admin-dashboard__header-actions .btn-primary {
+  min-height: 48px;
+  padding: 0.7rem 1.15rem !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #1c1915 !important;
+  color: #f7f4ef !important;
+  box-shadow: none !important;
+  font-weight: 650;
+}
+
+.app--admin .btn-primary:hover {
+  transform: none;
+  background: #312c27 !important;
+}
+
+.app--admin .btn-secondary,
+.app--admin .admin-btn-secondary {
+  min-height: 48px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--admin-line-strong) !important;
+  border-radius: 999px !important;
+  background: var(--admin-white) !important;
+  color: var(--admin-ink) !important;
+  box-shadow: none !important;
+  font-weight: 650;
+}
+
+.app--admin .admin-btn-danger,
+.app--admin .admin-dashboard__header-actions button:last-child {
+  min-height: 48px;
+  border: 1px solid #e7c8c4 !important;
+  border-radius: 999px !important;
+  background: var(--admin-danger-bg) !important;
+  color: var(--admin-danger) !important;
+}
+
+.app--admin .glass-panel,
+.app--admin .acquisition-workspace {
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 20px !important;
+  background: var(--admin-white) !important;
+  box-shadow: 0 1px 2px rgba(28, 25, 21, 0.04), 0 16px 40px rgba(28, 25, 21, 0.04) !important;
+  backdrop-filter: none !important;
+}
+
+.app--admin .glass-panel:hover,
+.app--admin .acquisition-workspace:hover {
+  box-shadow: 0 1px 2px rgba(28, 25, 21, 0.04), 0 16px 40px rgba(28, 25, 21, 0.04) !important;
+}
+
+.app--admin .acquisition-toolbar,
+.app--admin .acquisition-source-filter {
+  border-color: var(--admin-line) !important;
+  background: var(--admin-paper) !important;
+}
+
+.app--admin .admin-segment {
+  min-height: 40px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--admin-muted) !important;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.app--admin .admin-segment.is-on,
+.app--admin .acquisition-toolbar button[aria-pressed="true"],
+.app--admin .acquisition-source-filter button[aria-pressed="true"] {
+  background: #1c1915 !important;
+  color: #f7f4ef !important;
+  border-color: #1c1915 !important;
+}
+
+.app--admin input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+.app--admin select,
+.app--admin textarea,
+.app--admin .form-input {
+  min-height: 48px;
+  border: 1px solid var(--admin-line-strong) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: var(--admin-ink) !important;
+  font-family: var(--admin-ui);
+  font-size: 16px !important;
+  box-shadow: none !important;
+}
+
+.app--admin textarea,
+.app--admin textarea.form-input {
+  min-height: 96px;
+  padding: 0.75rem 0.85rem;
+}
+
+.app--admin .admin-notifications__trigger {
+  min-height: 48px;
+  border: 1px solid var(--admin-line-strong) !important;
+  border-radius: 999px !important;
+  background: var(--admin-white) !important;
+  color: var(--admin-ink) !important;
+}
+
+.app--admin input:not([type="checkbox"]):not([type="radio"]):focus,
+.app--admin select:focus,
+.app--admin textarea:focus,
+.app--admin .form-input:focus {
+  outline: none;
+  border-color: #1c1915 !important;
+  box-shadow: 0 0 0 3px rgba(28, 25, 21, 0.12) !important;
+}
+
+.app--admin .admin-property-form label,
+.app--admin .admin-property-importer label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--admin-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.app--admin .admin-property-form,
+.app--admin .admin-property-importer {
+  border-color: var(--admin-line) !important;
+}
+
+.app--admin .admin-property-form-page > button {
+  min-height: 44px;
+  color: var(--admin-ink) !important;
+  font-weight: 650;
+}
+
+.app--admin .acquisition-card {
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 18px !important;
+  background: var(--admin-white) !important;
+  box-shadow: 0 8px 24px rgba(28, 25, 21, 0.04) !important;
+}
+
+.app--admin .acquisition-card:hover {
+  transform: none;
+  border-color: var(--admin-line-strong) !important;
+}
+
+.app--admin .acquisition-card__primary-action {
+  border-color: var(--admin-ink) !important;
+  background: var(--admin-ink) !important;
+  color: var(--admin-cream) !important;
+}
+
+.app--admin .acquisition-stage-grid > button {
+  border-radius: 14px !important;
+  min-height: 76px !important;
+  box-shadow: none !important;
+}
+
+.app--admin .acquisition-empty,
+.app--admin .admin-empty {
+  padding: 2.5rem 1.25rem !important;
+  border: 1px dashed var(--admin-line-strong) !important;
+  border-radius: 18px !important;
+  background: var(--admin-paper) !important;
+  color: var(--admin-muted) !important;
+  text-align: center;
+}
+
+.app--admin .acquisition-empty strong,
+.app--admin .admin-empty strong {
+  font-family: var(--admin-display);
+  font-size: 1.35rem;
+  font-weight: 460;
+  color: var(--admin-ink);
+}
+
+.app--admin .property-publication-toggle {
+  min-height: 36px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.app--admin .property-publication-toggle.is-published {
+  background: var(--admin-ok-bg);
+  color: var(--admin-ok);
+}
+
+.app--admin .property-publication-toggle.is-draft {
+  background: var(--admin-warn-bg);
+  color: var(--admin-warn);
+}
+
+.app--admin .offer-improve-button,
+.app--admin .offer-audit-button,
+.app--admin .offer-video-button {
+  min-height: 40px;
+  border-radius: 999px !important;
+  border: 1px solid var(--admin-line-strong) !important;
+  background: var(--admin-white) !important;
+  color: var(--admin-ink) !important;
+}
+
+.app--admin [role="dialog"] {
+  background: rgba(28, 25, 21, 0.46) !important;
+}
+
+.app--admin [role="dialog"] > form,
+.app--admin [role="dialog"] > section,
+body:has(.app--admin) .proposal-wizard {
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 20px !important;
+  background: var(--admin-white) !important;
+  box-shadow: 0 24px 60px rgba(28, 25, 21, 0.18) !important;
+}
+
+.app--admin .admin-notifications {
+  border: 1px solid var(--admin-line);
+  border-radius: 18px;
+  background: var(--admin-white);
+}
+
+@media (max-width: 720px) {
+  .app--admin .admin-dashboard__header,
+  .app--admin .admin-dashboard__header-actions {
+    align-items: stretch !important;
+  }
+
+  .app--admin .admin-dashboard__header-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .app--admin .admin-dashboard__header-actions .btn-primary {
+    grid-column: 1 / -1;
+  }
+
+  .app--admin .admin-tabs {
+    top: 0;
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+    margin-inline: 0 !important;
+    border-radius: 16px !important;
+  }
+
+  .app--admin .admin-offers {
+    overflow: visible !important;
+    padding: 0.35rem;
+  }
+
+  .app--admin .admin-offers table,
+  .app--admin .admin-offers tbody,
+  .app--admin .admin-offers tr,
+  .app--admin .admin-offers td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .app--admin .admin-offers thead {
+    display: none;
+  }
+
+  .app--admin .admin-offers tr {
+    margin: 0.65rem 0.35rem;
+    padding: 0.85rem;
+    border: 1px solid var(--admin-line) !important;
+    border-radius: 16px;
+    background: var(--admin-white);
+  }
+
+  .app--admin .admin-offers td {
+    padding: 0.35rem 0 !important;
+    border: 0 !important;
+    text-align: left !important;
+  }
+
+  .app--admin .admin-offers td img {
+    width: 100% !important;
+    height: 160px !important;
+    border-radius: 12px !important;
+  }
+
+  .app--admin .admin-offers td > div {
+    justify-content: flex-start !important;
+  }
+
+  .app--admin .admin-property-form > div,
+  .app--admin .admin-property-importer form {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+
+  .app--admin .admin-property-form,
+  .app--admin .admin-property-importer {
+    padding: 1rem !important;
+  }
+}
+
+@media (min-width: 1100px) {
+  .app--admin .admin-dashboard__header {
+    top: 0.75rem;
+  }
+
+  .app--admin .admin-tabs {
+    top: 6.5rem;
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+  }
+}
