@@ -2,7 +2,7 @@
 // Kształt dokumentu ownerConsents jest taki sam jak w public/admin/zgody/app.js,
 // plus opcjonalne acquisitionListingId (wymaga reguły z tego PR).
 
-export type AcquisitionStage = 'new' | 'audit' | 'ready_to_call' | 'contacted' | 'meeting' | 'proposal' | 'acquired' | 'nurture' | 'rejected';
+export type AcquisitionStage = 'new' | 'audit' | 'ready_to_call' | 'contacted' | 'consent_draft' | 'meeting' | 'proposal' | 'acquired' | 'nurture' | 'rejected';
 
 export type CallResultId = 'no_answer' | 'callback' | 'interested_sms' | 'refused' | 'agency';
 
@@ -26,6 +26,7 @@ export const STAGE_LABELS: Record<AcquisitionStage, string> = {
     audit: 'Audyt ogłoszenia',
     ready_to_call: 'Gotowe do kontaktu',
     contacted: 'Rozmowa z właścicielem',
+    consent_draft: 'Zgoda — szkic oferty',
     meeting: 'Spotkanie / prezentacja planu',
     proposal: 'Oferta współpracy',
     acquired: 'Umowa podpisana',
@@ -128,6 +129,10 @@ export function stageForCallResult(current: AcquisitionStage | undefined, result
     const stage = current || 'new';
     if (stage === 'acquired') return 'acquired';
     if (result === 'refused' || result === 'agency') return 'rejected';
+    if (stage === 'consent_draft') {
+        if (result === 'callback' || (result === 'no_answer' && hasCallback)) return 'nurture';
+        return 'consent_draft';
+    }
     if (result === 'interested_sms') {
         if (stage === 'meeting' || stage === 'proposal') return stage;
         return 'contacted';
@@ -142,7 +147,7 @@ export function stageForCallResult(current: AcquisitionStage | undefined, result
 
 export function stageAfterConsentLink(current: AcquisitionStage | undefined): AcquisitionStage {
     const stage = current || 'new';
-    if (stage === 'meeting' || stage === 'proposal' || stage === 'acquired') return stage;
+    if (stage === 'meeting' || stage === 'proposal' || stage === 'acquired' || stage === 'consent_draft') return stage;
     return 'contacted';
 }
 

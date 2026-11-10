@@ -161,6 +161,12 @@ export const AcquisitionCallCard = ({ lead, consent, onSavePhone, onSaveResult, 
                 </div>
                 <span className={statusClass(status)}>{CONSENT_STATUS_LABEL[status]}</span>
             </header>
+            {status === 'confirmed_social' && (
+                <div className="call-card__instagram">
+                    <strong>Instagram</strong>
+                    <span>Zgoda na social jest. Przygotuj szkic posta — z tego miejsca nic nie jest publikowane.</span>
+                </div>
+            )}
 
             {(lead.lastCallAt || lead.callbackAt) && (
                 <p className="call-card__meta">
