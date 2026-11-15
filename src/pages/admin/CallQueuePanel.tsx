@@ -24,10 +24,13 @@ const buildQuickSmsText = (row: QueueRow) => {
 
 export const CallQueuePanel = ({ rows, onOpenCall, onQuickCallAction, maxVisible }: CallQueuePanelProps) => {
     const [expanded, setExpanded] = useState(false);
+    const [onlyWithPhone, setOnlyWithPhone] = useState(false);
     const [busyKey, setBusyKey] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const hasLimit = typeof maxVisible === 'number' && maxVisible > 0 && rows.length > maxVisible;
-    const visibleRows = hasLimit && !expanded ? rows.slice(0, maxVisible) : rows;
+    const withPhoneCount = rows.filter((row) => Boolean(row.lead.ownerPhone?.trim())).length;
+    const filteredRows = onlyWithPhone ? rows.filter((row) => Boolean(row.lead.ownerPhone?.trim())) : rows;
+    const hasLimit = typeof maxVisible === 'number' && maxVisible > 0 && filteredRows.length > maxVisible;
+    const visibleRows = hasLimit && !expanded ? filteredRows.slice(0, maxVisible) : filteredRows;
 
     const triggerQuickAction = async (leadId: string, action: QuickCallAction) => {
         if (!onQuickCallAction || busyKey) return;
@@ -54,19 +57,28 @@ export const CallQueuePanel = ({ rows, onOpenCall, onQuickCallAction, maxVisible
             <header className="call-queue__head">
                 <div>
                     <div className="admin-dashboard__eyebrow">DZWOŃ DZIŚ</div>
-                    <h3>Kolejka telefonów {hasLimit && !expanded ? `(Top ${maxVisible} z ${rows.length})` : ''}</h3>
+                    <h3>Kolejka telefonów {hasLimit && !expanded ? `(Top ${maxVisible} z ${filteredRows.length})` : ''}</h3>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                        type="button"
+                        className="agent-action-btn"
+                        aria-pressed={onlyWithPhone}
+                        onClick={() => setOnlyWithPhone((prev) => !prev)}
+                        style={onlyWithPhone ? { background: 'var(--color-primary, #1f5c43)', color: '#fff', borderColor: 'var(--color-primary, #1f5c43)' } : undefined}
+                    >
+                        Tylko z numerem tel. ({withPhoneCount})
+                    </button>
                     {hasLimit && (
                         <button type="button" className="agent-action-btn" onClick={() => setExpanded((prev) => !prev)}>
-                            {expanded ? `Zwiń do Top ${maxVisible}` : `Pokaż wszystkie (${rows.length})`}
+                            {expanded ? `Zwiń do Top ${maxVisible}` : `Pokaż wszystkie (${filteredRows.length})`}
                         </button>
                     )}
-                    <strong>{rows.length}</strong>
+                    <strong>{filteredRows.length}</strong>
                 </div>
             </header>
-            {rows.length === 0 ? (
-                <p className="call-queue__empty">Nic nie czeka na telefon. Nowe ogłoszenie z gotowym audytem albo etap „gotowe do kontaktu” pojawi się tutaj.</p>
+            {filteredRows.length === 0 ? (
+                <p className="call-queue__empty">{onlyWithPhone ? 'Brak ogłoszeń z zapisanym numerem telefonu w kolejce.' : 'Nic nie czeka na telefon. Nowe ogłoszenie z gotowym audytem albo etap „gotowe do kontaktu” pojawi się tutaj.'}</p>
             ) : (
                 <ol className="call-queue__list">
                     {visibleRows.map((row) => {

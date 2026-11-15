@@ -23,7 +23,16 @@ let TOP = {};
 let WT = {}; // Top wtórny (odsprzedaże)
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '4.' };
 const badge = (t, big) => t.rank > 3 ? `<span class="badge off">Poza podium</span>` : `<span class="badge ${t.medal}${big ? ' big' : ''}">🏆 TOP ${t.rank}</span>`;
-const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'k', estate: '', district: '', showAllEstates: false };
+const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'k', estate: '', district: '', showAllEstates: false, cart: [], clientView: false };
+const allUnitsCatalog = () => SET_DEFS.filter(([, , , get]) => get()).flatMap(([k, title, short, get]) => get().UNITS.map(u => ({ ...u, _setShort: short, _setTitle: title })));
+const cartUnits = () => {
+  const byId = Object.fromEntries(allUnitsCatalog().map(u => [u.id, u]));
+  return ui.cart.map(id => byId[id]).filter(Boolean);
+};
+const formatClientCartText = items => {
+  const lines = items.map((u, idx) => `${idx + 1}. ${u.name} (${u._setShort}, ${u.loc})\n   Metraż: ${m2(u.m2)} m² | Ogródek: ${u.gardenTxt} | Odbiór: ${u.ready}\n   Cena: ${fmt(u.price)} zł (${fmt(u.perM2)} zł/m²)${u.url ? `\n   Link: ${u.url}` : ''}`);
+  return `Dzień dobry, przesyłam wybrane mieszkania z ogródkiem w Warszawie przygotowane przez Domiz Homes:\n\n${lines.join('\n\n')}`;
+};
 // Zestaw danych: 'k' = kawalerki, '2' = 2 pokoje, '3' = 3 pokoje, '4' = 4 pokoje.
 const SET_DEFS = [
   ['k', 'Kawalerki', '1 pok.', () => D],
@@ -107,6 +116,38 @@ function rows() {
 }
 
 function render() {
+  if (ui.clientView) {
+    const selected = cartUnits();
+    $app.innerHTML = `
+      <div style="max-width:960px;margin:0 auto;padding:1rem 0">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem" class="no-print">
+          <button type="button" class="estate-btn" id="closeClientViewBtn">← Wróć do porównywarki</button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button type="button" class="estate-btn" id="copyCartMsgBtn">Kopiuj wiadomość dla klienta</button>
+            <button type="button" class="estate-btn on" id="printClientViewBtn">Drukuj / Zapisz jako PDF</button>
+          </div>
+        </div>
+        <section style="background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:1.25rem">
+          <div class="eyebrow">DOMIZ HOMES · PROPOZYCJA OFERT DLA KLIENTA</div>
+          <h2 style="margin:.25rem 0 .35rem">Wybrane mieszkania z ogródkiem — Warszawa (${selected.length})</h2>
+          <p class="small" style="margin:0 0 1rem">Zestawienie przygotowane ${new Date().toLocaleDateString('pl-PL')} · ceny brutto lokalu wg cenników źródłowych.</p>
+          ${selected.length === 0 ? '<p>Brak wybranych mieszkań w zestawieniu.</p>' : `<div class="tablewrap"><table>
+            <thead><tr><th>Opcja</th><th>Pokoje</th><th>Metraż</th><th>Ogródek</th><th>Cena</th><th>zł/m²</th><th>Odbiór</th><th>Link</th></tr></thead>
+            <tbody>${selected.map(u => `<tr>
+              <td><b>${esc(u.name)}</b><div class="small">${esc(u.loc)} · ${esc(u.dev)}</div></td>
+              <td>${esc(u._setShort)}</td>
+              <td class="num">${m2(u.m2)} m²</td>
+              <td class="num">${esc(u.gardenTxt)}</td>
+              <td class="num"><b>${fmt(u.price)} zł</b></td>
+              <td class="num">${fmt(u.perM2)} zł/m²</td>
+              <td>${esc(u.ready)}</td>
+              <td>${link(u)}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>`}
+        </section>
+      </div>`;
+    return;
+  }
   const X = S(), isKawalerki = X === D, hasBudgetCheck = X.hasBudgetCheck ?? isKawalerki;
   const scopeLabel = X.bannerScope || (isKawalerki ? 'kawalerek (25–34 m²)' : 'mieszkań 2-pokojowych z ogródkiem (parter, 35–53 m²)');
   const topTitle = isKawalerki ? 'kawalerki' : (X.label || '2 pokoje z ogródkiem');
@@ -207,13 +248,44 @@ function render() {
       <td class="num">${m2(u.m2)}</td><td class="num">${esc(u.gardenTxt)}</td><td>${esc(u.floor)}</td>
       <td class="num">${fmt(u.price)}</td><td class="num">${fmt(u.perM2)}</td><td>${esc(u.parking)}</td>
       <td class="num"><b>${esc(u.totalTxt)}</b></td><td>${esc(u.ready)}</td><td>${esc(u.metro)}</td>
-      <td>${hasBudgetCheck || X === D.SET2 ? (BUDGET_TAG[u.budget] || '') : (u.market === 'pierwotny' ? '<span class="tag ok">bez PCC</span>' : '<span class="tag chk">+2% PCC</span>')}${u.overTxt && (hasBudgetCheck || X === D.SET2) ? `<div class="small">${esc(u.overTxt)}</div>` : ''}</td><td>${link(u)}<button type="button" class="copy-btn" data-copy-id="${u.id}">Kopiuj</button>${u.market === 'wtórny' && u.url ? ` <a class="copy-btn" href="/admin?tab=acquisition&prefillUrl=${encodeURIComponent(u.url)}&prefillTitle=${encodeURIComponent(`${u.name} · ${u.loc} (${m2(u.m2)} m²)`)}&prefillPrice=${encodeURIComponent(`${fmt(u.price)} zł`)}" style="text-decoration:none">+ Pozysk</a>` : ''}</td></tr>`).join('')}</tbody></table></div>
+      <td>${hasBudgetCheck || X === D.SET2 ? (BUDGET_TAG[u.budget] || '') : (u.market === 'pierwotny' ? '<span class="tag ok">bez PCC</span>' : '<span class="tag chk">+2% PCC</span>')}${u.overTxt && (hasBudgetCheck || X === D.SET2) ? `<div class="small">${esc(u.overTxt)}</div>` : ''}</td><td>${link(u)}<button type="button" class="copy-btn" data-copy-id="${u.id}">Kopiuj</button> <button type="button" class="copy-btn${ui.cart.includes(u.id) ? ' ok' : ''}" data-cart-id="${u.id}">${ui.cart.includes(u.id) ? 'W zestawie ✓' : '+ Zestaw'}</button>${u.market === 'wtórny' && u.url ? ` <a class="copy-btn" href="/admin?tab=acquisition&prefillUrl=${encodeURIComponent(u.url)}&prefillTitle=${encodeURIComponent(`${u.name} · ${u.loc} (${m2(u.m2)} m²)`)}&prefillPrice=${encodeURIComponent(`${fmt(u.price)} zł`)}" style="text-decoration:none">+ Pozysk</a>` : ''}</td></tr>`).join('')}</tbody></table></div>
   <h2 class="sec">Na co uważać</h2>
   <div class="caveats">${X.CAVEATS.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join('')}</div>
-  <p class="small" style="margin-top:1rem">Źródła: strony deweloperów i portali (linki w tabeli), sprawdzone ${esc(X.UPDATED)}; rynek wtórny – pojedyncze ogłoszenia Otodom, sprawdzone 31.10.2026. Bez zdjęć i opisów z ogłoszeń.</p>`;
+  <p class="small" style="margin-top:1rem">Źródła: strony deweloperów i portali (linki w tabeli), sprawdzone ${esc(X.UPDATED)}; rynek wtórny – pojedyncze ogłoszenia Otodom, sprawdzone 31.10.2026. Bez zdjęć i opisów z ogłoszeń.</p>
+  ${ui.cart.length > 0 ? `<div style="position:sticky;bottom:1rem;z-index:40;margin-top:1rem;padding:.75rem 1rem;border-radius:12px;background:#0f172a;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;box-shadow:0 12px 28px rgba(15,23,42,.35)">
+    <div><strong>Zestawienie dla klienta: ${ui.cart.length} ${ui.cart.length === 1 ? 'oferta' : ui.cart.length < 5 ? 'oferty' : 'ofert'}</strong></div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button type="button" class="estate-btn" id="copyCartMsgBtn">Kopiuj wiadomość</button>
+      <button type="button" class="estate-btn on" id="openClientViewBtn">Widok / PDF dla klienta</button>
+      <button type="button" class="estate-btn" id="clearCartBtn">Wyczyść</button>
+    </div>
+  </div>` : ''}`;
 }
 
 $app.addEventListener('click', e => {
+  const cartBtn = e.target.closest('button[data-cart-id]');
+  if (cartBtn) {
+    const id = Number(cartBtn.dataset.cartId);
+    if (ui.cart.includes(id)) ui.cart = ui.cart.filter(x => x !== id);
+    else ui.cart = [...ui.cart, id];
+    render();
+    return;
+  }
+  if (e.target.closest('#openClientViewBtn')) { ui.clientView = true; render(); return; }
+  if (e.target.closest('#closeClientViewBtn')) { ui.clientView = false; render(); return; }
+  if (e.target.closest('#clearCartBtn')) { ui.cart = []; ui.clientView = false; render(); return; }
+  if (e.target.closest('#printClientViewBtn')) { window.print(); return; }
+  const copyMsgBtn = e.target.closest('#copyCartMsgBtn');
+  if (copyMsgBtn) {
+    const selected = cartUnits();
+    if (selected.length && navigator.clipboard) {
+      navigator.clipboard.writeText(formatClientCartText(selected)).then(() => {
+        copyMsgBtn.textContent = 'Skopiowano ✓';
+        setTimeout(() => { copyMsgBtn.textContent = 'Kopiuj wiadomość'; }, 1800);
+      }).catch(() => {});
+    }
+    return;
+  }
   const cb = e.target.closest('button[data-copy-id]');
   if (cb) {
     const id = Number(cb.dataset.copyId);
