@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { auth } from '../../firebase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import './admin-theme.css';
 
 export function Login() {
     const [isLogin, setIsLogin] = useState(true);
@@ -43,12 +44,11 @@ export function Login() {
     };
 
     return (
-        <div style={{
+        <div className="admin-login" style={{
             minHeight: '100vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'var(--color-bg-light)',
             padding: '1rem'
         }}>
             <div className="glass-panel" style={{

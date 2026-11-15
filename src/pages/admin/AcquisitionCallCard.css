@@ -1,0 +1,184 @@
+.call-card {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(28, 25, 21, 0.12);
+  border-radius: 18px;
+  background: #f7f4ef;
+  color: #1c1915;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.call-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.call-card__head h3,
+.call-card__sms h4 {
+  margin: 0;
+  font-family: Fraunces, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-weight: 460;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.call-card__head p,
+.call-card__meta,
+.call-card__sms > p,
+.call-card__link {
+  margin: 0.2rem 0 0;
+  color: #5c534c;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.call-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 11rem;
+  min-height: 32px;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.call-card__badge--none,
+.call-card__badge--declined,
+.call-card__badge--expired { background: #efe8df; color: #3f3832; }
+.call-card__badge--link_sent { background: #f8f1e4; color: #8a5a12; }
+.call-card__badge--confirmed_site { background: #e7f2eb; color: #1d5c3d; }
+.call-card__badge--confirmed_social { background: #1c1915; color: #f7f4ef; }
+.call-card__badge--withdrawn { background: #f8ecea; color: #8f2d2d; }
+
+.call-card__phone,
+.call-card__results,
+.call-card__sms {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.call-card__field {
+  display: grid;
+  gap: 0.28rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #5c534c;
+}
+
+.call-card__field input,
+.call-card__field textarea,
+.call-card__tap {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.call-card__field input,
+.call-card__field textarea {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(28, 25, 21, 0.2);
+  background: #fff;
+  color: #1c1915;
+  font-weight: 500;
+}
+
+.call-card__field textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.call-card__field input:focus,
+.call-card__field textarea:focus {
+  outline: none;
+  border-color: #1c1915;
+  box-shadow: 0 0 0 3px rgba(28, 25, 21, 0.12);
+}
+
+.call-card__tap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(28, 25, 21, 0.2);
+  background: #fff;
+  color: #1c1915;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.call-card__tap:disabled,
+.call-card__tap--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.call-card__tap--call,
+.call-card__tap--save,
+.call-card__tap--sms {
+  border-color: #1c1915;
+  background: #1c1915;
+  color: #f7f4ef;
+}
+
+.call-card__results button {
+  min-height: 48px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(28, 25, 21, 0.16);
+  border-radius: 12px;
+  background: #fff;
+  color: #1c1915;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.call-card__results button[aria-pressed="true"] {
+  background: #1c1915;
+  border-color: #1c1915;
+  color: #f7f4ef;
+}
+
+.call-card__sms {
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgba(28, 25, 21, 0.16);
+}
+
+.call-card__link {
+  word-break: break-all;
+  font-weight: 650;
+  color: #1c1915;
+}
+
+.call-card__error {
+  margin: 0;
+  color: #8f2d2d;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .call-card__results {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .call-card__results button:nth-child(3),
+  .call-card__results button:last-child {
+    grid-column: 1 / -1;
+  }
+}

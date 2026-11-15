@@ -4,47 +4,55 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /inquiries/{id} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read, update, delete: if isAdmin();
     }
 
     match /properties/{id} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     match /configs/{id} {
-      allow read, write: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read, write: if isAdmin();
     }
 
     match /acquisitionListings/{id} {
-      allow read, write: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read, write: if isAdmin();
+      // Importer (rutyna pozysku): tylko create/update własnych leadów z importBatch.
+      // Bez delete, bez pola published, bez innych kolekcji.
+      allow get: if isImporter();
+      allow create: if isImporter() && validImporterListing(request.resource.data);
+      allow update: if isImporter()
+        && validImporterListing(request.resource.data)
+        && resource.data.listingKey is string
+        && resource.data.importBatch is string
+        && request.resource.data.listingKey == resource.data.listingKey;
+      allow delete: if isAdmin();
     }
 
     match /pushSubscriptions/{id} {
-      allow read, write: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read, write: if isAdmin();
     }
 
     match /videoProjects/{id} {
-      allow read, write: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read, write: if isAdmin();
     }
 
     match /gammaJobs/{id} {
-      allow create: if request.auth != null
-        && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid))
+      allow create: if isAdmin()
         && request.resource.data.status == 'pending'
         && request.resource.data.listingId is string
         && request.resource.data.content is string;
-      allow read: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read: if isAdmin();
       allow update, delete: if false;
     }
 
     match /googleDocJobs/{id} {
-      allow create: if request.auth != null
-        && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid))
+      allow create: if isAdmin()
         && request.resource.data.status == 'pending'
         && request.resource.data.listingId is string
         && request.resource.data.content is string;
-      allow read: if request.auth != null && !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid));
+      allow read: if isAdmin();
       allow update, delete: if false;
     }
 
@@ -55,7 +63,7 @@ service cloud.firestore {
         && request.resource.data.email is string;
       allow read: if request.auth != null
         && (resource.data.uid == request.auth.uid
-          || !exists(/databases/$(database)/documents/clientPortals/$(request.auth.uid)));
+          || isAdmin());
       allow update, delete: if false;
     }
 
@@ -63,6 +71,135 @@ service cloud.firestore {
       allow get: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cooperationSelection', 'cooperationSelectionUpdatedAt']);
       allow list, create, delete: if false;
+    }
+
+
+    // ===== NOWE 30.10.2026: prawdziwa rola admina + "Właściciele do kontaktu" =====
+    // Admin = istnieje dokument admins/{uid}. Dokumenty admins tworzy się WYŁĄCZNIE
+    // w konsoli Firebase (konsola omija reguły); z aplikacji nie da się ich utworzyć.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ===== NOWE 10.11.2026: wąski importer Pozysków (rutyna) =====
+    // Tożsamość: dokument importers/{uid} (tworzony wyłącznie poza regułami, jak admins).
+    // Wolno tylko create/update w acquisitionListings z importBatch + source + listingKey.
+    // Zakaz pola published (oferty publiczne zostają poza zasięgiem).
+    function isImporter() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/importers/$(request.auth.uid));
+    }
+    function validImporterListing(d) {
+      return d.importBatch is string && d.importBatch.size() > 0 && d.importBatch.size() <= 80
+        && d.source is string && d.source in ['otodom', 'olx', 'nieruchomosci-online', 'adresowo', 'kazo', 'abyhom', 'url']
+        && d.listingKey is string && d.listingKey.size() > 0 && d.listingKey.size() <= 500
+        && !d.keys().hasAny(['published']);
+    }
+
+    function validOwnerLead(d) {
+      return d.keys().hasOnly(['portal', 'listingId', 'url', 'type', 'pricePln', 'adminFeePln',
+          'areaM2', 'rooms', 'floor', 'location', 'nordic', 'nordicFlag', 'extras', 'addedDate',
+          'ownerCheck', 'alsoOn', 'linkChecked', 'remarks', 'status', 'note',
+          'importedAt', 'updatedAt', 'updatedBy'])
+        && d.listingId is string
+        && d.url is string && d.url.matches('https://.+')
+        && d.status in ['nowy', 'napisano', 'rozmowa', 'umowa', 'odpada']
+        && d.note is string && d.note.size() <= 2000;
+    }
+
+    match /admins/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+
+    match /importers/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /ownerLeads/{leadId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() && validOwnerLead(request.resource.data);
+      allow delete: if false;
+    }
+
+    // ===== NOWE 5.11.2026: zgody właścicieli na bezpłatną publikację (/zgoda/<token>) =====
+    // Dokument = ownerConsents/{token}; token = 24+ losowe znaki [A-Za-z0-9] (nie do zgadnięcia).
+    // Tworzy WYŁĄCZNIE admin. Publicznie: tylko odczyt pojedynczego dokumentu po ID (bez listowania)
+    // i jednorazowe przejścia statusu: oczekuje -> potwierdzona | odmowa, potwierdzona -> wycofana.
+    // Pola wpisane przez admina są niezmienne. Brak usuwania (usunięcie na żądanie RODO – konsola).
+    // W dokumencie NIE ma numerów telefonów (reguła odrzuca ciągi 9+ cyfr w polach tekstowych).
+    function noPhone(s) {
+      return s is string && !s.matches('.*[0-9][0-9 ()+.-]{7,}[0-9].*');
+    }
+    function optStr(d, k, max) {
+      return !(k in d) || (d[k] is string && d[k].size() <= max && noPhone(d[k]));
+    }
+    function optNum(d, k) {
+      return !(k in d) || d[k] == null || d[k] is number;
+    }
+    function validNewConsent(id, d) {
+      return id.matches('^[A-Za-z0-9]{20,64}$')
+        && d.keys().hasOnly(['salutation', 'greeting', 'propertyType', 'location', 'areaM2', 'pricePln',
+            'listingUrl', 'consentTextVersion', 'status', 'createdAt', 'expiresAt', 'acquisitionListingId'])
+        && d.keys().hasAll(['propertyType', 'location', 'consentTextVersion', 'status', 'createdAt', 'expiresAt'])
+        && d.status == 'oczekuje'
+        && d.createdAt == request.time
+        && d.expiresAt is timestamp && d.expiresAt > request.time && d.expiresAt <= request.time + duration.value(90, 'd')
+        && d.consentTextVersion is string && d.consentTextVersion.matches('^zgoda-v[0-9]+-[0-9-]+$')
+        && (!('salutation' in d) || d.salutation in ['pan', 'pani', ''])
+        && optStr(d, 'greeting', 40)
+        && d.propertyType is string && d.propertyType.size() > 0 && optStr(d, 'propertyType', 40)
+        && d.location is string && d.location.size() > 0 && optStr(d, 'location', 120)
+        && optNum(d, 'areaM2') && optNum(d, 'pricePln')
+        && (!('listingUrl' in d) || d.listingUrl == ''
+            || (d.listingUrl is string && d.listingUrl.size() <= 300
+                && d.listingUrl.matches('^https://(www[.])?otodom[.]pl/[^ <>"]+$')))
+        // Opcjonalne powiązanie z kartą Pozysku. Formularz /admin/zgody go nie wysyła.
+        && (!('acquisitionListingId' in d) || (d.acquisitionListingId is string
+            && d.acquisitionListingId.size() > 0 && d.acquisitionListingId.size() <= 128
+            && noPhone(d.acquisitionListingId)));
+    }
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+    function ua(d, k) {
+      return d[k] is string && d[k].size() <= 400;
+    }
+    function confirmOk() {
+      let d = request.resource.data;
+      return resource.data.status == 'oczekuje'
+        && request.time < resource.data.expiresAt
+        && changed().hasOnly(['status', 'ownerName', 'consentSite', 'consentSocial', 'consentContact',
+            'consentPhoneInListing', 'consentTextSnapshot', 'confirmedAt', 'userAgent'])
+        && d.status == 'potwierdzona'
+        && d.consentSite == true
+        && d.consentSocial is bool && d.consentContact is bool && d.consentPhoneInListing is bool
+        && d.ownerName is string && d.ownerName.size() >= 2 && d.ownerName.size() <= 120 && noPhone(d.ownerName)
+        && d.consentTextSnapshot is string && d.consentTextSnapshot.size() >= 200 && d.consentTextSnapshot.size() <= 8000
+        && d.confirmedAt == request.time
+        && ua(d, 'userAgent');
+    }
+    function declineOk() {
+      let d = request.resource.data;
+      return resource.data.status == 'oczekuje'
+        && changed().hasOnly(['status', 'declinedAt', 'declineUserAgent'])
+        && d.status == 'odmowa' && d.declinedAt == request.time && ua(d, 'declineUserAgent');
+    }
+    function withdrawOk() {
+      let d = request.resource.data;
+      return resource.data.status == 'potwierdzona'
+        && changed().hasOnly(['status', 'withdrawnAt', 'withdrawUserAgent'])
+        && d.status == 'wycofana' && d.withdrawnAt == request.time && ua(d, 'withdrawUserAgent');
+    }
+
+    match /ownerConsents/{token} {
+      allow get: if token.matches('^[A-Za-z0-9]{20,64}$');
+      allow list: if isAdmin();
+      allow create: if isAdmin() && validNewConsent(token, request.resource.data);
+      allow update: if confirmOk() || declineOk() || withdrawOk();
+      allow delete: if false;
     }
   }
 }
