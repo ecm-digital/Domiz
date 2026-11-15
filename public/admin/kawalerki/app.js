@@ -58,7 +58,7 @@ function buildEstateDashboard() {
     if (!map.has(key)) {
       map.set(key, {
         name: key, dev: u.dev, loc: u.loc, units: [], sets: new Set(), setCounts: {},
-        minPrice: Infinity, maxGarden: 0, bestReadySort: '9999', bestReady: u.ready, url: u.url, site: u.site,
+        minPrice: Infinity, minM2: Infinity, maxM2: 0, minPerM2: Infinity, maxPerM2: 0, maxGarden: 0, bestReadySort: '9999', bestReady: u.ready, url: u.url, site: u.site,
       });
     }
     const e = map.get(key);
@@ -66,6 +66,14 @@ function buildEstateDashboard() {
     e.sets.add(u._setShort);
     e.setCounts[u._setKey] = (e.setCounts[u._setKey] || 0) + 1;
     if (u.price && u.price < e.minPrice) e.minPrice = u.price;
+    if (u.m2) {
+      if (u.m2 < e.minM2) e.minM2 = u.m2;
+      if (u.m2 > e.maxM2) e.maxM2 = u.m2;
+    }
+    if (u.perM2) {
+      if (u.perM2 < e.minPerM2) e.minPerM2 = u.perM2;
+      if (u.perM2 > e.maxPerM2) e.maxPerM2 = u.perM2;
+    }
     if (u.garden && u.garden > e.maxGarden) e.maxGarden = u.garden;
     if (u.readySort && u.readySort < e.bestReadySort) { e.bestReadySort = u.readySort; e.bestReady = u.ready; }
   }
@@ -110,7 +118,8 @@ function render() {
     <div class="ribbon ${wt ? 'wt' : t.medal}">${wt ? `🔑 Top wtórny ${t.rank}` : t.rank > 3 ? 'Poza podium · 4.' : `${MEDAL[t.rank]} TOP ${t.rank}`}${t.nordic ? ' · Nordic Bemowo' : ''}</div>
     <div class="tt">${esc(t.title)}</div>
     <div style="margin-top:.2rem"><b>${esc(u.name)}</b> ${mtag(u.market)}</div>
-    <div class="small" style="margin:.2rem 0 .5rem">${esc(u.dev)} · ${esc(u.loc)}</div>
+    <div class="small" style="margin:.2rem 0 .35rem">${esc(u.dev)} · ${esc(u.loc)}</div>
+    <div class="small" style="margin:0 0 .5rem;color:#0f172a"><b>${m2(u.m2)} m²</b> · <b>${fmt(u.perM2)} zł/m²</b> · ${fmt(u.price)} zł (${esc(u.gardenTxt)} ogródek)</div>
     <div class="why"><b>${wt ? 'Dlaczego w Top wtórny:' : t.rank > 3 ? 'Dlaczego wysoko:' : 'Dlaczego w top 3:'}</b> ${esc(t.why)}</div>
     ${(t.reasons || []).map(([k, v]) => `<div class="kv"><span>✔ ${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}
     <div style="margin-top:.5rem">${link(u)}</div></div>`;
@@ -150,6 +159,8 @@ function render() {
           </div>
           <div class="estate-card__stats">
             <div><span>Od:</span> <b>${e.minPrice < Infinity ? `${fmt(e.minPrice)} zł` : '–'}</b></div>
+            <div><span>Cena/m²:</span> <b>${e.minPerM2 < Infinity ? (e.minPerM2 === e.maxPerM2 ? `${fmt(e.minPerM2)} zł/m²` : `${fmt(e.minPerM2)}–${fmt(e.maxPerM2)} zł/m²`) : '–'}</b></div>
+            <div><span>Metraż:</span> <b>${e.minM2 < Infinity ? (e.minM2 === e.maxM2 ? `${m2(e.minM2)} m²` : `${m2(e.minM2)}–${m2(e.maxM2)} m²`) : '–'}</b></div>
             <div><span>Ogródek max:</span> <b>${e.maxGarden ? `${m2(e.maxGarden)} m²` : 'w opisie'}</b></div>
             <div><span>Pokoje:</span> <b>${esc(Array.from(e.sets).join(', '))}</b></div>
             <div><span>Odbiór:</span> <b>${esc(e.bestReady)}</b></div>
