@@ -1658,3 +1658,94 @@ exports.processGoogleDocAgreementJob = functions.runWith({
     }
     return null;
 });
+
+const ZADARMA_API_BASE = "https://api.zadarma.com";
+const DEFAULT_ZADARMA_SIP = "408873";
+
+const normalizePhoneDigits = (value) => {
+    let digits = String(value || "").replace(/\D+/g, "");
+    if (digits.startsWith("00")) digits = digits.slice(2);
+    if (digits.length === 9) digits = `48${digits}`;
+    return digits;
+};
+
+const signZadarmaRequest = (methodPath, params, apiKey, apiSecret) => {
+    const entries = Object.entries(params || {})
+        .filter(([, v]) => v !== undefined && v !== null && v !== "")
+        .sort(([a], [b]) => a.localeCompare(b));
+    const queryString = new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString();
+    const md5Hex = crypto.createHash("md5").update(queryString).digest("hex");
+    const signString = `${methodPath}${queryString}${md5Hex}`;
+    const hmacHex = crypto.createHmac("sha1", apiSecret).update(signString).digest("hex");
+    const signature = Buffer.from(hmacHex, "utf8").toString("base64");
+    return { queryString, authHeader: `${apiKey}:${signature}` };
+};
+
+exports.zadarmaRequestCallback = functions.runWith({ secrets: ["ZADARMA_API_KEY", "ZADARMA_API_SECRET"], timeoutSeconds: 30, memory: "256MB" }).https.onCall(async (data, context) => {
+    await requireTeamMember(context);
+    const apiKey = textValue(process.env.ZADARMA_API_KEY);
+    const apiSecret = textValue(process.env.ZADARMA_API_SECRET);
+    if (!apiKey || !apiSecret) {
+        throw new functions.https.HttpsError("failed-precondition", "Brak skonfigurowanych kluczy ZADARMA_API_KEY / ZADARMA_API_SECRET.");
+    }
+    const to = normalizePhoneDigits(data?.to);
+    if (!to || to.length < 9) {
+        throw new functions.https.HttpsError("invalid-argument", "Podaj prawidłowy numer telefonu docelowego.");
+    }
+    let from = textValue(data?.from);
+    if (!from) {
+        const settingsSnap = await db.collection("settings").doc("integrations").get().catch(() => null);
+        from = textValue(settingsSnap?.data()?.zadarmaFromNumber) || DEFAULT_ZADARMA_SIP;
+    }
+    const methodPath = "/v1/request/callback/";
+    const { queryString, authHeader } = signZadarmaRequest(methodPath, { from, to, predicted: "true" }, apiKey, apiSecret);
+    const response = await fetch(`${ZADARMA_API_BASE}${methodPath}?${queryString}`, {
+        method: "GET",
+        headers: { Authorization: authHeader },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.status === "error") {
+        throw new functions.https.HttpsError("internal", payload?.message || `Błąd Zadarma (${response.status})`);
+    }
+    const leadId = textValue(data?.leadId);
+    if (leadId) {
+        const now = new Date().toISOString();
+        const listingRef = db.collection("acquisitionListings").doc(leadId);
+        const listingSnap = await listingRef.get();
+        if (listingSnap.exists) {
+            const activities = Array.isArray(listingSnap.data()?.activities) ? listingSnap.data().activities : [];
+            activities.push({
+                id: crypto.randomUUID(),
+                type: "call",
+                summary: `Zainicjowano połączenie przez Zadarma (${from} → ${to}).`,
+                createdAt: now,
+                author: textValue(context.auth?.token?.email) || "Zespół",
+            });
+            await listingRef.update({ activities, lastCallAt: now, lastContactAt: now, updatedAt: now });
+        }
+    }
+    return { status: "ok", from, to, zadarma: payload };
+});
+
+exports.zadarmaWebhook = functions.https.onRequest(async (req, res) => {
+    const echo = textValue(req.query?.zd_echo);
+    if (echo) {
+        res.status(200).type("text/plain").send(echo);
+        return;
+    }
+    const body = req.body || {};
+    const event = textValue(body.event);
+    const now = new Date().toISOString();
+    await db.collection("zadarmaCalls").add({
+        event: event || "unknown",
+        callerId: textValue(body.caller_id),
+        destination: textValue(body.destination),
+        disposition: textValue(body.disposition),
+        duration: Number(body.duration || 0),
+        callId: textValue(body.call_id_with_rec || body.pbx_call_id || body.call_id),
+        isRecorded: String(body.is_recorded || "") === "1",
+        raw: body,
+        createdAt: now,
+    }).catch((err) => console.error("zadarmaWebhook save failed", err));
+    res.status(200).json({ ok: true });
+});
