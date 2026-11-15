@@ -2725,8 +2725,6 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                             </button>
                         </section>
 
-                        <CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} />
-
                         <section className="agent-pipeline">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <div>
@@ -2749,6 +2747,8 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                 })}
                             </div>
                         </section>
+
+                        <CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} maxVisible={5} />
 
                         <div className="agent-split">
                             <section className="agent-card">
