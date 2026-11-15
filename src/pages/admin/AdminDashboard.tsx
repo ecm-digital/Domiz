@@ -14,7 +14,7 @@ import './admin-theme.css';
 import { ClientAccountCreator } from './ClientAccountCreator';
 import { AcquisitionCallCard } from './AcquisitionCallCard';
 import { AdminTabBar } from './AdminTabBar';
-import { CallQueuePanel, type QuickCallAction } from './CallQueuePanel';
+import { CallQueuePanel, buildWhatsappUrl, type QuickCallAction } from './CallQueuePanel';
 import { CONSENT_TTL_MS, buildConsentLink, buildOwnerConsentFields, callbackDateToIso, consentCardStatus, consentForLead, formatCallNote, newConsentToken, stageAfterConsentLink, stageForCallResult } from './callCardLogic';
 import type { CallResultId, OwnerConsentLike } from './callCardLogic';
 import { EXTRA_LISTING_SOURCES, buildCallQueue, hasFinishedAudit, isOldUnpublishedImport, isPrivateAdvertiser, listingSourceKey, publishBlockReason, shouldCreateConsentDraft, stageAfterConfirmedConsent } from './workflowQueue';
@@ -632,8 +632,11 @@ export const AdminDashboard = () => {
     const [savingCallOutcome, setSavingCallOutcome] = useState(false);
     const [copiedOfferKey, setCopiedOfferKey] = useState<string | null>(null);
 
+    const formatMatchedOfferText = (prop: Property) =>
+        `Dzień dobry, przesyłam dopasowaną ofertę z Domiz Homes: ${prop.title} (${prop.location}) — ${prop.price.toLocaleString('pl-PL')} PLN, ${prop.sqft} m². Link: https://domizhomes.com/oferta/${prop.id}`;
+
     const copyMatchedOffer = async (leadId: string, prop: Property) => {
-        const text = `Dzień dobry, przesyłam dopasowaną ofertę z Domiz Homes: ${prop.title} (${prop.location}) — ${prop.price.toLocaleString('pl-PL')} PLN, ${prop.sqft} m². Link: https://domizhomes.com/oferta/${prop.id}`;
+        const text = formatMatchedOfferText(prop);
         try {
             await navigator.clipboard.writeText(text);
             const key = `${leadId}:${prop.id}`;
@@ -3196,14 +3199,27 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                                                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${offer.title} (${offer.price.toLocaleString('pl-PL')} PLN)`}>
                                                                                 {offer.title} · {Math.round(offer.price / 1000)} tys.
                                                                             </span>
-                                                                            <button
-                                                                                type="button"
-                                                                                className="agent-action-btn"
-                                                                                style={{ padding: '0.15rem 0.4rem', fontSize: '0.68rem', flexShrink: 0 }}
-                                                                                onClick={() => void copyMatchedOffer(lead.id, offer)}
-                                                                            >
-                                                                                {copiedOfferKey === `${lead.id}:${offer.id}` ? 'Skopiowano ✓' : 'Kopiuj'}
-                                                                            </button>
+                                                                            <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="agent-action-btn"
+                                                                                    style={{ padding: '0.15rem 0.4rem', fontSize: '0.68rem' }}
+                                                                                    onClick={() => void copyMatchedOffer(lead.id, offer)}
+                                                                                >
+                                                                                    {copiedOfferKey === `${lead.id}:${offer.id}` ? 'Skopiowano ✓' : 'Kopiuj'}
+                                                                                </button>
+                                                                                {lead.phone && (
+                                                                                    <a
+                                                                                        href={buildWhatsappUrl(lead.phone, formatMatchedOfferText(offer))}
+                                                                                        target="_blank"
+                                                                                        rel="noreferrer"
+                                                                                        className="agent-action-btn"
+                                                                                        style={{ padding: '0.15rem 0.4rem', fontSize: '0.68rem', textDecoration: 'none', color: '#15803d', borderColor: '#86efac' }}
+                                                                                    >
+                                                                                        WhatsApp
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -3303,13 +3319,26 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                                             <span>
                                                                 <strong>{offer.title}</strong> · {offer.location} · {offer.price.toLocaleString('pl-PL')} PLN ({offer.sqft} m²)
                                                             </span>
-                                                            <button
-                                                                type="button"
-                                                                className="agent-action-btn"
-                                                                onClick={() => void copyMatchedOffer(lead.id, offer)}
-                                                            >
-                                                                {copiedOfferKey === `${lead.id}:${offer.id}` ? 'Skopiowano ✓' : 'Kopiuj propozycję'}
-                                                            </button>
+                                                            <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="agent-action-btn"
+                                                                    onClick={() => void copyMatchedOffer(lead.id, offer)}
+                                                                >
+                                                                    {copiedOfferKey === `${lead.id}:${offer.id}` ? 'Skopiowano ✓' : 'Kopiuj propozycję'}
+                                                                </button>
+                                                                {lead.phone && (
+                                                                    <a
+                                                                        href={buildWhatsappUrl(lead.phone, formatMatchedOfferText(offer))}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="agent-action-btn"
+                                                                        style={{ textDecoration: 'none', color: '#15803d', borderColor: '#86efac' }}
+                                                                    >
+                                                                        WhatsApp
+                                                                    </a>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -3506,7 +3535,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                             <section style={{ width: 'min(820px, 100%)', margin: 'auto', background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 24px 60px rgba(15,23,42,0.25)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}><div><div style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', marginBottom: '0.35rem' }}>Podgląd potencjalnej oferty</div><h2 style={{ margin: 0 }}>{item.title || 'Ogłoszenie z Otodom'}</h2><div style={{ color: 'var(--color-text-secondary)', marginTop: '0.35rem' }}>{[item.location, item.price, item.areaM2 ? `${item.areaM2} m²` : '', item.rooms ? `${item.rooms} pok.` : ''].filter(Boolean).join(' · ')}</div></div><div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>{callQueue.some((row) => row.lead.id !== item.id) && <button type="button" className="agent-action-btn" onClick={openNextInQueue}>Następny z kolejki →</button>}<button type="button" aria-label="Zamknij" onClick={() => setViewingPropertyLead(null)} style={{ border: 0, background: 'transparent', fontSize: '1.5rem', cursor: 'pointer' }}>×</button></div></div>
                                 <label className="acquisition-preview__assignee"><span>Opiekun oferty</span><select aria-label="Opiekun oferty" value={item.assignee || ''} disabled={savingAssigneeId === item.id} onChange={(event) => void setPropertyLeadAssignee(item.id, event.target.value)}><option value="">Nieprzypisany</option>{PROPERTY_CARETAKERS.map((caretaker) => <option key={caretaker} value={caretaker}>{caretaker}</option>)}</select>{savingAssigneeId === item.id && <small>Zapisywanie…</small>}</label>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem', padding: '0.75rem 0.85rem', border: '1px solid #bbf7d0', borderRadius: '0.6rem', background: '#f0fdf4' }}><div><div style={{ color: '#166534', fontSize: '0.73rem', fontWeight: 800, textTransform: 'uppercase' }}>Kontakt do właściciela</div><div style={{ marginTop: '0.15rem', fontWeight: 700 }}>{item.ownerName || 'Imię do uzupełnienia'}{item.ownerPhone && <span style={{ color: '#475569', fontWeight: 500 }}> · {item.ownerPhone}</span>}</div></div>{item.ownerPhone ? <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}><a href={`tel:${item.ownerPhone.replace(/\s/g, '')}`} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>Zadzwoń</a><a href={`sms:${item.ownerPhone.replace(/\s/g, '')}`} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>SMS</a><button type="button" onClick={() => void copyAcquisitionText(smsScript, 'SMS')} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Kopiuj SMS</button></div> : <button type="button" onClick={() => { setViewingPropertyLead(null); openPropertyLeadEditor(item); }} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Dodaj kontakt</button>}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem', padding: '0.75rem 0.85rem', border: '1px solid #bbf7d0', borderRadius: '0.6rem', background: '#f0fdf4' }}><div><div style={{ color: '#166534', fontSize: '0.73rem', fontWeight: 800, textTransform: 'uppercase' }}>Kontakt do właściciela</div><div style={{ marginTop: '0.15rem', fontWeight: 700 }}>{item.ownerName || 'Imię do uzupełnienia'}{item.ownerPhone && <span style={{ color: '#475569', fontWeight: 500 }}> · {item.ownerPhone}</span>}</div></div>{item.ownerPhone ? <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}><a href={`tel:${item.ownerPhone.replace(/\s/g, '')}`} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>Zadzwoń</a><a href={`sms:${item.ownerPhone.replace(/\s/g, '')}`} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>SMS</a><button type="button" onClick={() => void copyAcquisitionText(smsScript, 'SMS')} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Kopiuj SMS</button><a href={buildWhatsappUrl(item.ownerPhone, smsScript)} target="_blank" rel="noreferrer" style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#15803d', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}>WhatsApp</a></div> : <button type="button" onClick={() => { setViewingPropertyLead(null); openPropertyLeadEditor(item); }} style={{ padding: '0.4rem 0.55rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: 'white', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Dodaj kontakt</button>}</div>
                                 <AcquisitionCallCard lead={item} consent={consentForLead(item, ownerConsentsById)} onSavePhone={(phone) => saveLeadPhone(item.id, phone)} onSaveResult={async (input) => { await saveCallCardResult(item.id, input); openNextInQueue(); }} onPrepareConsent={() => prepareOwnerConsentLink(item.id)} />
                                 <button type="button" onClick={() => openCallOutcome(item)} style={{ marginTop: '0.65rem', padding: '0.45rem 0.6rem', border: '1px solid #86efac', borderRadius: '0.4rem', background: '#f0fdf4', color: '#166534', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>Zapisz wynik rozmowy</button>
                                 {draft?.images?.length ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.65rem', marginTop: '1rem' }}>{draft.images.map((image, index) => <img key={image} src={image} alt={`Zdjęcie oferty ${index + 1}`} style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '0.5rem' }} />)}</div> : null}

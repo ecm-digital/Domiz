@@ -16,6 +16,13 @@ interface CallQueuePanelProps {
     maxVisible?: number;
 }
 
+export const buildWhatsappUrl = (phone: string, text: string): string => {
+    let digits = phone.replace(/\D+/g, '');
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.length === 9) digits = `48${digits}`;
+    return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+};
+
 const buildQuickSmsText = (row: QueueRow) => {
     const title = row.lead.title || 'Państwa ogłoszenia nieruchomości';
     const location = row.lead.location ? ` (${row.lead.location})` : '';
@@ -123,6 +130,17 @@ export const CallQueuePanel = ({ rows, onOpenCall, onQuickCallAction, maxVisible
                                             <button type="button" className="agent-action-btn" onClick={() => void copyQuickSms(row)}>
                                                 {copiedId === row.lead.id ? 'Skopiowano SMS ✓' : 'Kopiuj SMS'}
                                             </button>
+                                            {phone && (
+                                                <a
+                                                    href={buildWhatsappUrl(rawPhone, buildQuickSmsText(row))}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="agent-action-btn"
+                                                    style={{ textDecoration: 'none', color: '#15803d', borderColor: '#86efac' }}
+                                                >
+                                                    WhatsApp
+                                                </a>
+                                            )}
                                         </div>
                                     )}
                                 </div>
