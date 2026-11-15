@@ -14,10 +14,52 @@ import './admin-theme.css';
 import { ClientAccountCreator } from './ClientAccountCreator';
 import { AcquisitionCallCard } from './AcquisitionCallCard';
 import { AdminTabBar } from './AdminTabBar';
-import { CallQueuePanel } from './CallQueuePanel';
+import { CallQueuePanel, type QuickCallAction } from './CallQueuePanel';
 import { CONSENT_TTL_MS, buildConsentLink, buildOwnerConsentFields, callbackDateToIso, consentCardStatus, consentForLead, formatCallNote, newConsentToken, stageAfterConsentLink, stageForCallResult } from './callCardLogic';
 import type { CallResultId, OwnerConsentLike } from './callCardLogic';
 import { EXTRA_LISTING_SOURCES, buildCallQueue, hasFinishedAudit, isOldUnpublishedImport, isPrivateAdvertiser, listingSourceKey, publishBlockReason, shouldCreateConsentDraft, stageAfterConfirmedConsent } from './workflowQueue';
+
+interface LeadOfferMatchInput {
+    name?: string;
+    source?: string;
+    message?: string;
+    payload?: {
+        title?: string;
+        message?: string;
+        budget?: string;
+        district?: string;
+        rooms?: string;
+    };
+}
+
+function matchOffersForLead(lead: LeadOfferMatchInput, catalog: Property[]): Property[] {
+    const activeCatalog = catalog.filter((item) => item.published !== false);
+    if (!activeCatalog.length) return [];
+    const blob = [lead.name, lead.source, lead.message, lead.payload?.title, lead.payload?.message, lead.payload?.budget, lead.payload?.district, lead.payload?.rooms]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    const wantHouse = /\b(dom|bliźniak|segment)\b/.test(blob);
+    const wantFlat = /\b(mieszkan|kawalerk|apartament|ogródek|ogrodkiem|pokoje)\b/.test(blob);
+    const wantPlot = /\b(działk|dzialk|grunt)\b/.test(blob);
+    const budgetMatch = blob.match(/(\d{3})\s*(?:000|tys)/);
+    const maxBudget = budgetMatch ? Number(budgetMatch[1]) * 1000 * 1.15 : null;
+
+    const scored = activeCatalog.map((prop) => {
+        let score = prop.featured ? 2 : 1;
+        if (wantHouse && prop.type === 'dom') score += 4;
+        if (wantFlat && prop.type === 'mieszkanie') score += 4;
+        if (wantPlot && prop.type === 'dzialka') score += 4;
+        const locWords = prop.location.toLowerCase().split(/[\s,]+/).filter((w) => w.length > 3);
+        if (locWords.some((w) => blob.includes(w))) score += 5;
+        if (maxBudget && prop.price <= maxBudget) score += 3;
+        return { prop, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score || (b.prop.featured ? 1 : 0) - (a.prop.featured ? 1 : 0));
+    return scored.slice(0, 3).map((entry) => entry.prop);
+}
 
 type PipelineStage = 'new' | 'qualified' | 'contacted' | 'presentation' | 'negotiation' | 'won' | 'lost';
 type StoredLeadStatus = PipelineStage | 'closed';
@@ -588,9 +630,34 @@ export const AdminDashboard = () => {
     const [callOutcomeTarget, setCallOutcomeTarget] = useState<PropertyLead | null>(null);
     const [callOutcomeDraft, setCallOutcomeDraft] = useState<{ outcome: CallOutcome; note: string; followUpDate: string }>({ outcome: 'no_answer', note: '', followUpDate: '' });
     const [savingCallOutcome, setSavingCallOutcome] = useState(false);
+    const [copiedOfferKey, setCopiedOfferKey] = useState<string | null>(null);
+
+    const copyMatchedOffer = async (leadId: string, prop: Property) => {
+        const text = `Dzień dobry, przesyłam dopasowaną ofertę z Domiz Homes: ${prop.title} (${prop.location}) — ${prop.price.toLocaleString('pl-PL')} PLN, ${prop.sqft} m². Link: https://domizhomes.com/oferta/${prop.id}`;
+        try {
+            await navigator.clipboard.writeText(text);
+            const key = `${leadId}:${prop.id}`;
+            setCopiedOfferKey(key);
+            window.setTimeout(() => setCopiedOfferKey((prev) => (prev === key ? null : prev)), 2000);
+        } catch {
+            // ignore clipboard errors
+        }
+    };
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
+        const prefillUrl = params.get('prefillUrl') || '';
+        const prefillTitle = params.get('prefillTitle') || '';
+        const prefillPrice = params.get('prefillPrice') || '';
+        if (prefillUrl || prefillTitle) {
+            setActiveTab('acquisition');
+            if (prefillUrl) setSourceUrl(prefillUrl);
+            const lines = [prefillTitle, prefillPrice ? `Cena: ${prefillPrice}` : '', prefillUrl ? `Źródło: ${prefillUrl}` : ''].filter(Boolean);
+            setSourceText(lines.join('\n'));
+            setIsSourceImportOpen(true);
+            window.history.replaceState({}, '', '/admin?tab=acquisition');
+            return;
+        }
         if (params.get('newProposal') !== '1') return;
         const listingId = params.get('listingId') || '';
         setProposalTarget(null);
@@ -1135,6 +1202,26 @@ export const AdminDashboard = () => {
         }
         await updateDoc(doc(db, 'acquisitionListings', id), updates);
         patchPropertyLead(id, updates);
+    };
+    const handleQuickCallAction = async (leadId: string, action: QuickCallAction) => {
+        const formatDaysOffset = (days: number) => {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            return d.toISOString().slice(0, 10);
+        };
+        if (action === 'no_answer') {
+            await saveCallCardResult(leadId, { result: 'no_answer', note: 'Szybka akcja: nie odbiera — ponowna próba jutro.', callbackDate: formatDaysOffset(1) });
+            return;
+        }
+        if (action === 'callback_2d') {
+            await saveCallCardResult(leadId, { result: 'callback', note: 'Szybka akcja: oddzwonić za 2 dni.', callbackDate: formatDaysOffset(2) });
+            return;
+        }
+        if (action === 'interested') {
+            await saveCallCardResult(leadId, { result: 'interested_sms', note: 'Szybka akcja: właściciel wstępnie zainteresowany.', callbackDate: '' });
+            return;
+        }
+        await saveCallCardResult(leadId, { result: 'refused', note: 'Szybka akcja: odpada / brak zgody na współpracę.', callbackDate: '' });
     };
     const prepareOwnerConsentLink = async (id: string) => {
         const lead = propertyLeadsRef.current.find((item) => item.id === id);
@@ -2748,7 +2835,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                             </div>
                         </section>
 
-                        <CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} maxVisible={5} />
+                        <CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} onQuickCallAction={handleQuickCallAction} maxVisible={5} />
 
                         <div className="agent-split">
                             <section className="agent-card">
@@ -3097,6 +3184,32 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                                     )}
                                                     {lead.owner && <div style={{ fontSize: '0.77rem', marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>Opiekun: {lead.owner}</div>}
                                                     {lead.followUpDate && <div style={{ fontSize: '0.77rem', marginTop: '0.2rem', color: 'var(--color-text-secondary)' }}>Follow-up: {lead.followUpDate}</div>}
+                                                    {(() => {
+                                                        const matches = matchOffersForLead(lead, properties).slice(0, 2);
+                                                        if (!matches.length) return null;
+                                                        return (
+                                                            <div style={{ marginTop: '0.55rem', padding: '0.45rem 0.55rem', borderRadius: '0.45rem', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.73rem' }}>
+                                                                <div style={{ fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Pasujące oferty ({matches.length})</div>
+                                                                <div style={{ display: 'grid', gap: '0.28rem' }}>
+                                                                    {matches.map((offer) => (
+                                                                        <div key={offer.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.35rem' }}>
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${offer.title} (${offer.price.toLocaleString('pl-PL')} PLN)`}>
+                                                                                {offer.title} · {Math.round(offer.price / 1000)} tys.
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="agent-action-btn"
+                                                                                style={{ padding: '0.15rem 0.4rem', fontSize: '0.68rem', flexShrink: 0 }}
+                                                                                onClick={() => void copyMatchedOffer(lead.id, offer)}
+                                                                            >
+                                                                                {copiedOfferKey === `${lead.id}:${offer.id}` ? 'Skopiowano ✓' : 'Kopiuj'}
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                     <select value={stage.id} disabled={updatingLeadId === lead.id} onChange={(e) => void setLeadStatus(lead.id, e.target.value as PipelineStage)} style={{ width: '100%', marginTop: '0.65rem', padding: '0.42rem', borderRadius: '0.4rem', border: '1px solid var(--color-border)', background: 'white', fontSize: '0.78rem' }}>
                                                         {PIPELINE_STAGES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                                                     </select>
@@ -3177,6 +3290,32 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                                             <span style={{ color: 'var(--color-text-secondary)' }}>Lokalizacja: {lead.payload.location}</span>
                                         )}
                                     </div>
+
+                                    {(() => {
+                                        const matches = matchOffersForLead(lead, properties);
+                                        if (!matches.length) return null;
+                                        return (
+                                            <div style={{ marginTop: '0.75rem', padding: '0.65rem 0.75rem', borderRadius: '0.55rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                                <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155', marginBottom: '0.4rem' }}>Pasujące oferty dla klienta ({matches.length})</div>
+                                                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                                                    {matches.map((offer) => (
+                                                        <div key={offer.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', fontSize: '0.82rem' }}>
+                                                            <span>
+                                                                <strong>{offer.title}</strong> · {offer.location} · {offer.price.toLocaleString('pl-PL')} PLN ({offer.sqft} m²)
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                className="agent-action-btn"
+                                                                onClick={() => void copyMatchedOffer(lead.id, offer)}
+                                                            >
+                                                                {copiedOfferKey === `${lead.id}:${offer.id}` ? 'Skopiowano ✓' : 'Kopiuj propozycję'}
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {lead.type === 'client_cooperation_selection' && (
                                         <section style={{ marginTop: '0.75rem', padding: '1rem', borderRadius: '0.65rem', border: '1px solid #86efac', background: '#f0fdf4' }}>
@@ -3263,7 +3402,7 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 <div className="glass-panel acquisition-workspace" style={{ padding: '1.25rem' }}>
                     <style>{'[title="Skopiuj link"], [title="Obserwuj"] { display: none !important; }'}</style>
                     <div className="acquisition-workspace__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                        <div className="acquisition-call-filter"><button type="button" aria-pressed={callTodayOnly} onClick={() => setCallTodayOnly((value) => !value)}>Dzwoń dziś ({callQueue.length})</button></div><CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} /><div><div className="admin-dashboard__eyebrow">PIPELINE POZYSKANIA</div><h2 style={{ margin: 0, fontSize: '1.2rem' }}>Pozyskiwanie ofert</h2><p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Potencjalne nieruchomości z Otodom, OLX i Facebooka — od analizy ogłoszenia do pozyskania umowy.</p><div className="acquisition-source-filter"><span>Źródło</span><div role="group" aria-label="Źródło pozysku">{['all', ...acquisitionSourceOptions].map((source) => <button key={source} type="button" aria-pressed={acquisitionSourceFilter === source} onClick={() => setAcquisitionSourceFilter(source)}>{source === 'all' ? 'Wszystkie' : source}</button>)}</div></div></div>
+                        <div className="acquisition-call-filter"><button type="button" aria-pressed={callTodayOnly} onClick={() => setCallTodayOnly((value) => !value)}>Dzwoń dziś ({callQueue.length})</button></div><CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} onQuickCallAction={handleQuickCallAction} maxVisible={5} /><div><div className="admin-dashboard__eyebrow">PIPELINE POZYSKANIA</div><h2 style={{ margin: 0, fontSize: '1.2rem' }}>Pozyskiwanie ofert</h2><p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Potencjalne nieruchomości z Otodom, OLX i Facebooka — od analizy ogłoszenia do pozyskania umowy.</p><div className="acquisition-source-filter"><span>Źródło</span><div role="group" aria-label="Źródło pozysku">{['all', ...acquisitionSourceOptions].map((source) => <button key={source} type="button" aria-pressed={acquisitionSourceFilter === source} onClick={() => setAcquisitionSourceFilter(source)}>{source === 'all' ? 'Wszystkie' : source}</button>)}</div></div></div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}><div style={{ display: 'flex', padding: '0.2rem', border: '1px solid var(--color-border)', borderRadius: '0.55rem', background: 'white' }}><button type="button" className={acquisitionView === 'list' ? 'admin-segment is-on' : 'admin-segment'} onClick={() => setAcquisitionView('list')}>Lista</button><button type="button" className={acquisitionView === 'board' ? 'admin-segment is-on' : 'admin-segment'} onClick={() => setAcquisitionView('board')}>Proces</button></div><button type="button" onClick={exportAcquisitionsCsv} disabled={!filteredPropertyLeads.length} style={{ padding: '0.5rem 0.65rem', border: '1px solid #bfdbfe', borderRadius: '0.5rem', background: 'white', color: '#1d4ed8', cursor: filteredPropertyLeads.length ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: '0.8rem', opacity: filteredPropertyLeads.length ? 1 : 0.5 }}>Eksport CSV</button><button onClick={() => setIsSourceImportOpen(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Plus size={18} /> Dodaj nowy pozysk</button></div>
                     </div>
                     <div className="acquisition-toolbar" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '1rem' }}><input aria-label="Szukaj pozysków" value={acquisitionSearch} onChange={(event) => setAcquisitionSearch(event.target.value)} placeholder="Szukaj po tytule, adresie lub cenie..." style={{ flex: '1 1 300px', padding: '0.65rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem' }} /><button type="button" aria-pressed={privateOnly} onClick={() => setPrivateOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: privateOnly ? '1px solid #047857' : '1px solid var(--color-border)', background: privateOnly ? '#ecfdf5' : 'white', color: privateOnly ? '#047857' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Tylko prywatne</button><button type="button" aria-pressed={attentionOnly} onClick={() => setAttentionOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: attentionOnly ? '1px solid #b91c1c' : '1px solid var(--color-border)', background: attentionOnly ? '#fef2f2' : 'white', color: attentionOnly ? '#b91c1c' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Wymaga działania</button><button type="button" aria-pressed={incompleteOnly} onClick={() => setIncompleteOnly((current) => !current)} style={{ padding: '0.65rem 0.8rem', borderRadius: '0.45rem', border: incompleteOnly ? '1px solid #b45309' : '1px solid var(--color-border)', background: incompleteOnly ? '#fffbeb' : 'white', color: incompleteOnly ? '#b45309' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 700 }}>Braki danych</button><select aria-label="Filtr opiekuna" value={acquisitionAssigneeFilter} onChange={(event) => setAcquisitionAssigneeFilter(event.target.value as typeof acquisitionAssigneeFilter)} style={{ padding: '0.65rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem', background: 'white', color: 'var(--color-text-main)', cursor: 'pointer' }}><option value="all">Wszyscy opiekunowie</option><option value="unassigned">Bez opiekuna</option>{PROPERTY_CARETAKERS.map((caretaker) => <option key={caretaker} value={caretaker}>{caretaker}</option>)}</select><select aria-label="Sortowanie pozysków" value={acquisitionSort} onChange={(event) => setAcquisitionSort(event.target.value as typeof acquisitionSort)} style={{ padding: '0.65rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '0.45rem', background: 'white', color: 'var(--color-text-main)', cursor: 'pointer' }}><option value="newest">Najnowsze</option><option value="deadline">Najbliższy termin</option><option value="price_desc">Cena: malejąco</option><option value="price_asc">Cena: rosnąco</option></select></div>

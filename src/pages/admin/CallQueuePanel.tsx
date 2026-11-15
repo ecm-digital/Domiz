@@ -7,16 +7,47 @@ const KIND_LABEL = {
     stale: 'Bez właściciela od ponad 14 dni',
 } as const;
 
+export type QuickCallAction = 'no_answer' | 'callback_2d' | 'interested' | 'rejected';
+
 interface CallQueuePanelProps {
     rows: QueueRow[];
     onOpenCall: (id: string) => void;
+    onQuickCallAction?: (leadId: string, action: QuickCallAction) => Promise<void>;
     maxVisible?: number;
 }
 
-export const CallQueuePanel = ({ rows, onOpenCall, maxVisible }: CallQueuePanelProps) => {
+const buildQuickSmsText = (row: QueueRow) => {
+    const title = row.lead.title || 'Państwa ogłoszenia nieruchomości';
+    const location = row.lead.location ? ` (${row.lead.location})` : '';
+    return `Dzień dobry, dzwoniłem przed chwilą w sprawie ${title}${location}. Reprezentuję Domiz Homes — mamy klientów poszukujących podobnych nieruchomości i chętnie porozmawiam o współpracy. Proszę o kontakt zwrotny w wolnej chwili.`;
+};
+
+export const CallQueuePanel = ({ rows, onOpenCall, onQuickCallAction, maxVisible }: CallQueuePanelProps) => {
     const [expanded, setExpanded] = useState(false);
+    const [busyKey, setBusyKey] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
     const hasLimit = typeof maxVisible === 'number' && maxVisible > 0 && rows.length > maxVisible;
     const visibleRows = hasLimit && !expanded ? rows.slice(0, maxVisible) : rows;
+
+    const triggerQuickAction = async (leadId: string, action: QuickCallAction) => {
+        if (!onQuickCallAction || busyKey) return;
+        setBusyKey(`${leadId}:${action}`);
+        try {
+            await onQuickCallAction(leadId, action);
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
+    const copyQuickSms = async (row: QueueRow) => {
+        try {
+            await navigator.clipboard.writeText(buildQuickSmsText(row));
+            setCopiedId(row.lead.id);
+            window.setTimeout(() => setCopiedId((prev) => (prev === row.lead.id ? null : prev)), 2000);
+        } catch {
+            // Clipboard may be blocked in non-HTTPS contexts
+        }
+    };
 
     return (
         <section className="call-queue" aria-label="Dzwoń dziś">
@@ -39,17 +70,49 @@ export const CallQueuePanel = ({ rows, onOpenCall, maxVisible }: CallQueuePanelP
             ) : (
                 <ol className="call-queue__list">
                     {visibleRows.map((row) => {
-                        const phone = Boolean(row.lead.ownerPhone?.trim());
+                        const rawPhone = row.lead.ownerPhone?.trim() || '';
+                        const phone = Boolean(rawPhone);
+                        const telHref = phone ? `tel:${rawPhone.replace(/\s+/g, '')}` : '';
+                        const rowBusy = busyKey?.startsWith(`${row.lead.id}:`) || false;
                         return (
                             <li key={`${row.kind}-${row.lead.id}`} className={`call-queue__row call-queue__row--${row.kind}`}>
                                 <div className="call-queue__badge" aria-label={row.priority ? `Priorytet ${row.priority} z 5` : 'Bez priorytetu'}>
                                     {row.priority ?? '–'}
                                 </div>
                                 <div className="call-queue__body">
-                                    <div className="call-queue__kind">{KIND_LABEL[row.kind]}</div>
+                                    <div className="call-queue__kind">
+                                        {KIND_LABEL[row.kind]}
+                                        {phone && (
+                                            <a
+                                                href={telHref}
+                                                style={{ marginLeft: '0.5rem', color: 'var(--color-primary, #1f5c43)', fontWeight: 700, textDecoration: 'underline' }}
+                                            >
+                                                ☎ {rawPhone}
+                                            </a>
+                                        )}
+                                    </div>
                                     <strong>{row.lead.title || 'Ogłoszenie'}</strong>
                                     <div>{[row.lead.location, row.lead.price].filter(Boolean).join(' · ') || 'Brak lokalizacji i ceny'}</div>
                                     {row.opener && <p>{row.opener}</p>}
+                                    {onQuickCallAction && (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.45rem' }}>
+                                            <button type="button" className="agent-action-btn" disabled={rowBusy} onClick={() => void triggerQuickAction(row.lead.id, 'no_answer')}>
+                                                {busyKey === `${row.lead.id}:no_answer` ? 'Zapis...' : 'Nie odbiera'}
+                                            </button>
+                                            <button type="button" className="agent-action-btn" disabled={rowBusy} onClick={() => void triggerQuickAction(row.lead.id, 'callback_2d')}>
+                                                {busyKey === `${row.lead.id}:callback_2d` ? 'Zapis...' : 'Oddzwonić +2d'}
+                                            </button>
+                                            <button type="button" className="agent-action-btn" disabled={rowBusy} onClick={() => void triggerQuickAction(row.lead.id, 'interested')}>
+                                                {busyKey === `${row.lead.id}:interested` ? 'Zapis...' : 'Zainteresowany'}
+                                            </button>
+                                            <button type="button" className="agent-action-btn" disabled={rowBusy} onClick={() => void triggerQuickAction(row.lead.id, 'rejected')}>
+                                                {busyKey === `${row.lead.id}:rejected` ? 'Zapis...' : 'Odpada'}
+                                            </button>
+                                            <button type="button" className="agent-action-btn" onClick={() => void copyQuickSms(row)}>
+                                                {copiedId === row.lead.id ? 'Skopiowano SMS ✓' : 'Kopiuj SMS'}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="call-queue__actions">
                                     {phone ? (
