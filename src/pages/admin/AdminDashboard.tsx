@@ -2674,39 +2674,152 @@ ${JSON.stringify({ verdict: englishAudit?.auditVerdict, strengths: englishAudit?
                 const total = propertyLeads.length;
                 const acquired = propertyLeads.filter((item) => item.stage === 'acquired').length;
                 const audited = propertyLeads.filter((item) => Boolean(item.auditSummary)).length;
+                const proposalsCount = propertyLeads.filter((item) => Boolean(item.generatedProposal)).length;
+                const agreementsCount = propertyLeads.filter((item) => Boolean(item.generatedAgreement)).length;
                 const ready = callQueue.filter((row) => row.kind === 'call').length;
+                const publishedCount = properties.filter((item) => item.published).length;
                 const today = new Date().toISOString().slice(0, 10);
                 const overdueTasks = propertyLeads.flatMap((item) => (item.tasks || []).filter((task) => task.status === 'open' && task.dueDate < today).map((task) => ({ item, task })));
                 const todayTasks = propertyLeads.flatMap((item) => (item.tasks || []).filter((task) => task.status === 'open' && task.dueDate === today).map((task) => ({ item, task })));
                 const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
                 const recentActivities = propertyLeads.flatMap((item) => (item.activities || []).filter((activity) => new Date(activity.createdAt).getTime() >= sevenDaysAgo));
                 const ownerSummary = Object.entries(propertyLeads.reduce<Record<string, { total: number; ready: number; acquired: number; overdue: number }>>((summary, item) => { const owner = item.assignee?.trim() || 'Bez opiekuna'; const current = summary[owner] || { total: 0, ready: 0, acquired: 0, overdue: 0 }; current.total += 1; current.ready += item.stage === 'ready_to_call' ? 1 : 0; current.acquired += item.stage === 'acquired' ? 1 : 0; current.overdue += (item.tasks || []).filter((task) => task.status === 'open' && task.dueDate < today).length; summary[owner] = current; return summary; }, {})).sort(([, a], [, b]) => b.total - a.total);
-                const metrics = [['Wszystkie pozyski', total, '#1d4ed8', '#eff6ff'], ['Audyty wykonane', audited, '#6d28d9', '#f5f3ff'], ['Do telefonu', ready, '#b45309', '#fffbeb'], ['Aktywne oferty', acquired, '#047857', '#ecfdf5'], ['Konwersja', total ? `${Math.round((acquired / total) * 100)}%` : '0%', '#0f766e', '#f0fdfa'], ['Zadania po terminie', overdueTasks.length, '#b91c1c', '#fef2f2'], ...ACQUISITION_STAGES.map((stage) => [stage.label, `${propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length}${total ? ` · ${Math.round((propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length / total) * 100)}%` : ''}`, stage.color, stage.background])];
-                return <div className="glass-panel" style={{ padding: '1.25rem' }}>
-                    <section style={{ marginBottom: '1rem', padding: '0.95rem 1rem', borderRadius: '0.85rem', border: '1px solid rgba(28, 25, 21, 0.12)', background: 'linear-gradient(135deg, #fffcf8, #f7f4ef)' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.6rem', marginBottom: '0.7rem' }}>
+                return (
+                    <div className="glass-panel agent-dash">
+                        <section className="agent-dash__hero">
                             <div>
-                                <div className="admin-dashboard__eyebrow" style={{ marginBottom: '0.15rem' }}>RADAR RYNKU · MIESZKANIA Z OGRÓDKIEM (WARSZAWA)</div>
-                                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Najlepsze osiedla od deweloperów</h2>
+                                <div className="admin-dashboard__eyebrow">COCKPIT AGENTA NIERUCHOMOŚCI · {today}</div>
+                                <h2>Twój dzień pracy i wyniki sprzedaży</h2>
+                                <p style={{ margin: '0.3rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                                    {ready} do telefonu · {todayTasks.length} zadań na dziś · {overdueTasks.length} po terminie · {recentActivities.length} kontaktów w ostatnich 7 dniach
+                                </p>
                             </div>
-                            <a href="/admin/kawalerki" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', borderRadius: '999px', background: '#1c1915', color: '#f7f4ef', textDecoration: 'none', fontWeight: 700, fontSize: '0.8rem' }}>Pełny dashboard (1–4 pok.) →</a>
+                            <div className="agent-actions">
+                                <button type="button" className="agent-action-btn is-primary" onClick={() => { setActiveTab('acquisition'); setCallTodayOnly(true); }}>Dzwoń dziś ({callQueue.length})</button>
+                                <a href="/admin/kawalerki" className="agent-action-btn">Osiedla z ogródkiem (1–4 pok.)</a>
+                                <a href="/admin/zgody" className="agent-action-btn">Zgody właścicieli</a>
+                                <button type="button" className="agent-action-btn" onClick={() => setActiveTab('videos')}>Studio filmów AI</button>
+                            </div>
+                        </section>
+
+                        <section className="agent-kpis" aria-label="Kluczowe wskaźniki agenta">
+                            <button type="button" className="agent-kpi" onClick={() => { setActiveTab('acquisition'); setCallTodayOnly(true); }}>
+                                <div className="agent-kpi__label">Kolejka telefonów</div>
+                                <div className="agent-kpi__value">{ready}</div>
+                                <div className="agent-kpi__sub">z {total} pozysków · {audited} po audycie</div>
+                            </button>
+                            <button type="button" className="agent-kpi" onClick={() => setActiveTab('leads')}>
+                                <div className="agent-kpi__label">Zgłoszenia klientów</div>
+                                <div className="agent-kpi__value">{inquiries.length}</div>
+                                <div className="agent-kpi__sub">zapytania kupujących i właścicieli</div>
+                            </button>
+                            <button type="button" className="agent-kpi" onClick={() => setActiveTab('offers')}>
+                                <div className="agent-kpi__label">Oferty w portfelu</div>
+                                <div className="agent-kpi__value">{properties.length}</div>
+                                <div className="agent-kpi__sub">{publishedCount} opublikowanych na stronie</div>
+                            </button>
+                            <button type="button" className="agent-kpi" onClick={() => setActiveTab('proposals')}>
+                                <div className="agent-kpi__label">Proposale i umowy</div>
+                                <div className="agent-kpi__value">{proposalsCount} / {agreementsCount}</div>
+                                <div className="agent-kpi__sub">konwersja pozysków: {total ? `${Math.round((acquired / total) * 100)}%` : '0%'}</div>
+                            </button>
+                        </section>
+
+                        <CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} />
+
+                        <section className="agent-pipeline">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1rem' }}>Lejek pozyskiwania nieruchomości</h3>
+                                    <p style={{ margin: '0.2rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>Kliknij etap, aby otworzyć filtrowany pipeline.</p>
+                                </div>
+                                <button type="button" className="agent-action-btn" onClick={() => { setAcquisitionFilter('all'); setActiveTab('acquisition'); }}>Wszystkie ({total})</button>
+                            </div>
+                            <div className="agent-pipeline__grid">
+                                {ACQUISITION_STAGES.map((stage) => {
+                                    const count = propertyLeads.filter((item) => (item.stage || 'new') === stage.id).length;
+                                    const pct = total ? Math.round((count / total) * 100) : 0;
+                                    return (
+                                        <button key={stage.id} type="button" className="agent-stage" onClick={() => { setAcquisitionFilter(stage.id); setActiveTab('acquisition'); }}>
+                                            <div style={{ fontSize: '0.74rem', fontWeight: 700, color: stage.color }}>{stage.label}</div>
+                                            <div style={{ marginTop: '0.25rem', fontSize: '1.25rem', fontWeight: 800 }}>{count} <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>({pct}%)</span></div>
+                                            <div className="agent-stage__bar"><div className="agent-stage__fill" style={{ width: `${Math.max(pct, count > 0 ? 8 : 0)}%`, background: stage.color }} /></div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </section>
+
+                        <div className="agent-split">
+                            <section className="agent-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1rem', color: overdueTasks.length ? '#b91c1c' : 'inherit' }}>Pilne zadania i dzisiejszy plan ({overdueTasks.length + todayTasks.length})</h3>
+                                    <button type="button" className="agent-action-btn" onClick={() => setActiveTab('acquisition')}>Pozyski →</button>
+                                </div>
+                                {(overdueTasks.length > 0 || todayTasks.length > 0) ? (
+                                    <div style={{ display: 'grid', gap: '0.45rem', marginTop: '0.75rem' }}>
+                                        {overdueTasks.slice(0, 4).map(({ item, task }) => (
+                                            <button key={task.id} type="button" onClick={() => { setActiveTab('acquisition'); setViewingPropertyLead(item); }} style={{ textAlign: 'left', padding: '0.6rem 0.7rem', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                                                <strong style={{ color: '#991b1b' }}>{task.title}</strong>
+                                                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.76rem', marginTop: '0.15rem' }}>{item.title} · po terminie: {task.dueDate}</div>
+                                            </button>
+                                        ))}
+                                        {todayTasks.slice(0, 3).map(({ item, task }) => (
+                                            <button key={task.id} type="button" onClick={() => { setActiveTab('acquisition'); setViewingPropertyLead(item); }} style={{ textAlign: 'left', padding: '0.6rem 0.7rem', background: '#fff', border: '1px solid var(--admin-line)', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                                                <strong>{task.title}</strong>
+                                                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.76rem', marginTop: '0.15rem' }}>{item.title} · na dziś</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', marginTop: '0.65rem' }}>Brak zaległych zadań na dziś — świetny moment na telefony z kolejki powyżej.</p>
+                                )}
+                            </section>
+
+                            <section className="agent-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
+                                    <div>
+                                        <div className="admin-dashboard__eyebrow" style={{ marginBottom: '0.1rem' }}>RADAR RYNKU · WARSZAWA</div>
+                                        <h3 style={{ margin: 0, fontSize: '1rem' }}>Najlepsze osiedla z ogródkiem</h3>
+                                    </div>
+                                    <a href="/admin/kawalerki" className="agent-action-btn is-primary">Wszystkie (1–4 pok.) →</a>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.55rem' }}>
+                                    {[
+                                        ['Metro Zachód · Dom Dev.', 'Chrzanów · 0,5 km M2', 'od 532 tys. · III kw. 2027'],
+                                        ['Bemowo Vita · Develia', 'Chrzanów · 0,3 km M2', 'ogródki do 68,5 m²'],
+                                        ['BeMovo · GH Dev.', 'Chrzanów · 0,6 km M2', '1–2 pok. od 527 tys.'],
+                                        ['Regaty / Berensona', 'Białołęka · 3–4 pokoje', '3p od 484 tys. · 4p od 715 tys.'],
+                                    ].map(([title, sub, meta]) => (
+                                        <a key={title} href="/admin/kawalerki" style={{ display: 'block', padding: '0.65rem 0.75rem', borderRadius: '0.6rem', border: '1px solid rgba(28, 25, 21, 0.1)', background: '#fff', textDecoration: 'none', color: 'inherit' }}>
+                                            <div style={{ fontWeight: 750, fontSize: '0.84rem' }}>{title}</div>
+                                            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', marginTop: '0.12rem' }}>{sub}</div>
+                                            <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#1d5c3d', marginTop: '0.3rem' }}>{meta}</div>
+                                        </a>
+                                    ))}
+                                </div>
+                            </section>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.6rem' }}>
-                            {[
-                                ['Metro Zachód · Dom Development', 'Chrzanów · 0,5 km M2', 'od 556 tys. · odbiór III kw. 2027'],
-                                ['Bemowo Vita · Develia', 'Chrzanów · 0,3 km M2', 'ogródki do 68,5 m² · 1–2 pok.'],
-                                ['Sochaczewska Vita · Develia', 'Chrzanów · M2 Karolin', 'ogródki do 48,6 m² · XI 2027'],
-                                ['Regaty / Berensona · Białołęka', '3–4 pokoje z ogródkiem', '3 pok. od 484 tys. · 4 pok. od 715 tys.'],
-                            ].map(([title, sub, meta]) => (
-                                <a key={title} href="/admin/kawalerki" style={{ display: 'block', padding: '0.7rem 0.8rem', borderRadius: '0.65rem', border: '1px solid rgba(28, 25, 21, 0.1)', background: '#fff', textDecoration: 'none', color: 'inherit' }}>
-                                    <div style={{ fontWeight: 750, fontSize: '0.86rem' }}>{title}</div>
-                                    <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>{sub}</div>
-                                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#1d5c3d', marginTop: '0.35rem' }}>{meta}</div>
-                                </a>
-                            ))}
-                        </div>
-                    </section>
-                    <CallQueuePanel rows={callQueue} onOpenCall={openCallFromQueue} /><div><h2 style={{ margin: 0 }}>Wyniki pozyskiwania</h2><p style={{ margin: '0.35rem 0 1.25rem', color: 'var(--color-text-muted)' }}>Obraz pracy zespołu i najważniejszych kolejnych działań.</p></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '0.7rem' }}>{metrics.map(([label, value, color, background]) => <div key={label as string} style={{ padding: '0.85rem', borderRadius: '0.65rem', background: background as string, color: color as string }}><div style={{ fontSize: '0.78rem' }}>{label}</div><div style={{ fontWeight: 800, fontSize: '1.45rem', marginTop: '0.25rem' }}>{value}</div></div>)}</div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '0.85rem', marginTop: '1rem' }}><section style={{ padding: '1rem', border: '1px solid #fecaca', borderRadius: '0.65rem', background: '#fffafa' }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#b91c1c' }}>Pilne zadania ({overdueTasks.length})</h3>{overdueTasks.length ? <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem' }}>{overdueTasks.map(({ item, task }) => <button key={task.id} type="button" onClick={() => { setActiveTab('acquisition'); setViewingPropertyLead(item); }} style={{ textAlign: 'left', padding: '0.55rem', background: 'white', border: '1px solid #fecaca', borderRadius: '0.4rem', cursor: 'pointer' }}><strong>{task.title}</strong><div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', marginTop: '0.15rem' }}>{item.title} · termin: {task.dueDate}</div></button>)}</div> : <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>Brak zadań po terminie.</p>}</section><section style={{ padding: '1rem', border: '1px solid #bfdbfe', borderRadius: '0.65rem', background: '#f8fbff' }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#1d4ed8' }}>Aktywność i dzisiejsze zadania</h3><div style={{ marginTop: '0.7rem', display: 'grid', gap: '0.35rem', fontSize: '0.9rem' }}><div><strong>{todayTasks.length}</strong> zadań na dziś</div><div><strong>{recentActivities.length}</strong> wpisów kontaktowych z ostatnich 7 dni</div><button type="button" onClick={() => setActiveTab('acquisition')} style={{ marginTop: '0.4rem', width: 'fit-content', padding: '0.4rem 0.55rem', border: '1px solid #bfdbfe', borderRadius: '0.4rem', color: '#1d4ed8', background: 'white', cursor: 'pointer', fontWeight: 700 }}>Otwórz pozyski</button></div></section></div><section style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.65rem', background: '#fff' }}><h3 style={{ margin: 0, fontSize: '1rem' }}>Portfele opiekunów</h3><p style={{ margin: '0.3rem 0 0.7rem', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>Kliknij osobę, aby przejść do jej pozysków.</p>{ownerSummary.length ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.6rem' }}>{ownerSummary.map(([owner, summary]) => <button key={owner} type="button" onClick={() => { setAcquisitionSearch(owner === 'Bez opiekuna' ? '' : owner); setActiveTab('acquisition'); }} style={{ textAlign: 'left', padding: '0.7rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', background: '#f8fafc', cursor: 'pointer' }}><div style={{ fontWeight: 800 }}>{owner}</div><div style={{ marginTop: '0.3rem', color: '#475569', fontSize: '0.78rem' }}><strong>{summary.total}</strong> pozysków · {summary.ready} do kontaktu · {summary.acquired} pozyskanych</div>{summary.overdue > 0 && <div style={{ marginTop: '0.3rem', color: '#b91c1c', fontSize: '0.76rem', fontWeight: 700 }}>{summary.overdue} zadań po terminie</div>}</button>)}</div> : <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Przypisz opiekuna w edycji pozysku, aby zobaczyć podział pracy.</div>}</section></div>;
+
+                        <section className="agent-card">
+                            <h3 style={{ margin: 0, fontSize: '1rem' }}>Portfele opiekunów</h3>
+                            <p style={{ margin: '0.25rem 0 0.7rem', color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>Kliknij opiekuna, aby przejść bezpośrednio do jego pozysków.</p>
+                            {ownerSummary.length ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.6rem' }}>
+                                    {ownerSummary.map(([owner, summary]) => (
+                                        <button key={owner} type="button" onClick={() => { setAcquisitionSearch(owner === 'Bez opiekuna' ? '' : owner); setActiveTab('acquisition'); }} style={{ textAlign: 'left', padding: '0.7rem 0.8rem', border: '1px solid var(--admin-line)', borderRadius: '0.65rem', background: '#fff', cursor: 'pointer' }}>
+                                            <div style={{ fontWeight: 800 }}>{owner}</div>
+                                            <div style={{ marginTop: '0.3rem', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}><strong>{summary.total}</strong> pozysków · {summary.ready} do kontaktu · {summary.acquired} pozyskanych</div>
+                                            {summary.overdue > 0 && <div style={{ marginTop: '0.3rem', color: '#b91c1c', fontSize: '0.76rem', fontWeight: 700 }}>{summary.overdue} zadań po terminie</div>}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Przypisz opiekuna w edycji pozysku, aby zobaczyć podział pracy.</div>
+                            )}
+                        </section>
+                    </div>
+                );
             })()}
 
             {activeTab === 'offers' && (
