@@ -23,22 +23,42 @@
     <button class="btn danger" id="logoutBtn" hidden>Wyloguj</button>
   </div>
 </header>
-<nav class="admin-tabs" aria-label="Panel">
-  <a href="/admin">Wyniki</a>
-  <a href="/admin">Oferty</a>
-  <a href="/admin">Zgłoszenia</a>
-  <a href="/admin">Pozyskiwanie ofert</a>
-  <a href="/admin">Osiedla</a>
-  <a href="/admin">Prezentacje</a>
-  <a href="/admin">Audyty</a>
-  <a href="/admin">Proposale</a>
-  <a href="/admin">Umowy</a>
-  <a href="/admin">Konta klientów</a>
-  <a href="/admin/wlasciciele">Właściciele do kontaktu</a>
-  <a href="/admin/kawalerki" aria-current="page">Mieszkania z ogródkiem – Warszawa</a>
+<nav class="admin-tabs" aria-label="Workflow agenta nieruchomości">
+  <a href="/admin?tab=dashboard">Start · Wyniki</a>
+  <a href="/admin?tab=acquisition">Pozyskiwanie</a>
+  <a href="/admin?tab=leads">Zgłoszenia</a>
+  <a href="/admin?tab=offers">Oferty</a>
   <a href="/admin/zgody">Zgody</a>
-  <a href="/admin">Ustawienia SEO &amp; AI</a>
-  <a href="/admin">Studio filmów AI</a>
+  <details class="admin-more">
+    <summary class="admin-more__toggle">Więcej ▾</summary>
+    <div class="admin-more__panel">
+      <div class="admin-more__group">
+        <span class="admin-more__label">Sprzedaż i klienci</span>
+        <div class="admin-more__items">
+          <a href="/admin?tab=presentation">Prezentacje</a>
+          <a href="/admin?tab=proposals">Proposale</a>
+          <a href="/admin?tab=agreements">Umowy</a>
+          <a href="/admin?tab=clientAccounts">Konta klientów</a>
+        </div>
+      </div>
+      <div class="admin-more__group">
+        <span class="admin-more__label">Rynek i pozysk</span>
+        <div class="admin-more__items">
+          <a href="/admin?tab=estates">Osiedla</a>
+          <a href="/admin?tab=audits">Audyty</a>
+          <a href="/admin/kawalerki" aria-current="page">Mieszkania z ogródkiem – Warszawa</a>
+          <a href="/admin/wlasciciele">Właściciele do kontaktu</a>
+        </div>
+      </div>
+      <div class="admin-more__group">
+        <span class="admin-more__label">Marketing i system</span>
+        <div class="admin-more__items">
+          <a href="/admin?tab=videos">Studio filmów AI</a>
+          <a href="/admin?tab=settings">Ustawienia SEO &amp; AI</a>
+        </div>
+      </div>
+    </div>
+  </details>
 </nav>
 <main id="app"><div class="msg">Ładowanie…</div></main>
 </div>

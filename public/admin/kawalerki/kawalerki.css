@@ -142,7 +142,244 @@ a { color: var(--ink); }
   color: var(--cream);
 }
 
+.admin-more {
+  display: contents;
+}
+
+.admin-more__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.admin-more__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.admin-more[open] > .admin-more__toggle {
+  background: rgba(28, 25, 21, 0.08);
+  color: var(--ink);
+}
+
+.admin-more__panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  flex: 1 0 100%;
+  gap: 0.75rem 1rem;
+  padding: 0.65rem 0.45rem 0.35rem;
+  border-top: 1px solid var(--line);
+  margin-top: 0.2rem;
+}
+
+.admin-more__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-more__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding-left: 0.25rem;
+}
+
+.admin-more__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.admin-more__items a {
+  min-height: 40px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(28, 25, 21, 0.05);
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+
 main { min-width: 0; }
+
+.estate-dash {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: 0 10px 28px rgba(28, 25, 21, 0.04);
+}
+
+.estate-dash__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+
+.estate-dash__head h2 {
+  margin: 0.1rem 0 0;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+
+.estate-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.estate-kpi {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.estate-kpi__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.estate-kpi__val {
+  margin-top: 0.22rem;
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.estate-kpi__sub {
+  margin-top: 0.15rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.estate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.7rem;
+}
+
+.estate-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.estate-card.is-active {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.estate-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.estate-card__name {
+  font-weight: 750;
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+.estate-card__meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.estate-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.estate-card__stats span {
+  color: var(--muted);
+}
+
+.estate-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.estate-btn {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.estate-btn.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--cream);
+}
+
+.estate-districts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.copy-btn {
+  margin-left: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.copy-btn.ok {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  color: var(--ok);
+}
 
 .msg {
   max-width: 560px;

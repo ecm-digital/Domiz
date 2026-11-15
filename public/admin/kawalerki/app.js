@@ -23,9 +23,58 @@ let TOP = {};
 let WT = {}; // Top wtórny (odsprzedaże)
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '4.' };
 const badge = (t, big) => t.rank > 3 ? `<span class="badge off">Poza podium</span>` : `<span class="badge ${t.medal}${big ? ' big' : ''}">🏆 TOP ${t.rank}</span>`;
-const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'k' };
-// Zestaw danych: 'k' = kawalerki (UNITS…), '2' = 2 pokoje z ogródkiem (SET2).
-const S = () => (ui.set === '2' && D.SET2) ? D.SET2 : D;
+const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'k', estate: '', district: '' };
+// Zestaw danych: 'k' = kawalerki, '2' = 2 pokoje, '3' = 3 pokoje, '4' = 4 pokoje.
+const SET_DEFS = [
+  ['k', 'Kawalerki', '1 pok.', () => D],
+  ['2', '2 pokoje z ogródkiem', '2 pok.', () => D.SET2],
+  ['3', '3 pokoje z ogródkiem', '3 pok.', () => D.SET3],
+  ['4', '4 pokoje z ogródkiem', '4 pok.', () => D.SET4],
+];
+const S = () => (SET_DEFS.find(([k]) => k === ui.set)?.[3]() || D);
+const estateKey = u => String(u.name || '').split('–')[0].trim();
+const DISTRICT_GROUPS = [
+  ['', 'Wszystkie dzielnice'],
+  ['bemowo', 'Bemowo / Chrzanów'],
+  ['bialoleka', 'Białołęka / Tarchomin'],
+  ['centrum_zachod', 'Wola / Mokotów / Ursus / Włochy'],
+  ['wschod', 'Wawer / Wesoła / inne'],
+];
+function districtGroup(u) {
+  const txt = `${u.loc || ''} ${u.metro || ''} ${u.name || ''}`.toLowerCase();
+  if (/bemow|chrzan[oó]w|lazurow|szeligow|cooper|sochaczew|kocjana|pe[łl]czy|czumy|batalion|karolin|lumea/.test(txt)) return 'bemowo';
+  if (/bia[łl]o[łl][eę]k|tarchomin|[żz]era[ńn]|lewand[oó]w|frachtow|zdziarsk|szamocin|modli[ńn]sk|kartograf|sprawn|daniszew|pancer|berenson|k[ąa]ty|mochty[ńn]/.test(txt)) return 'bialoleka';
+  if (/wola|mokot[oó]w|stegn|ursus|go[łl][ąa]bki|w[łl]ochy|coko[łl]ow|capri|fajansow/.test(txt)) return 'centrum_zachod';
+  return 'wschod';
+}
+
+function buildEstateDashboard() {
+  const allSets = SET_DEFS.filter(([, , , get]) => get()).map(([k, title, short, get]) => ({ k, title, short, data: get() }));
+  const allUnits = allSets.flatMap(s => s.data.UNITS.map(u => ({ ...u, _setKey: s.k, _setShort: s.short })));
+  const primaryUnits = allUnits.filter(u => u.market === 'pierwotny');
+  const map = new Map();
+  for (const u of primaryUnits) {
+    const key = estateKey(u);
+    if (!map.has(key)) {
+      map.set(key, {
+        name: key, dev: u.dev, loc: u.loc, units: [], sets: new Set(), setCounts: {},
+        minPrice: Infinity, maxGarden: 0, bestReadySort: '9999', bestReady: u.ready, url: u.url, site: u.site,
+      });
+    }
+    const e = map.get(key);
+    e.units.push(u);
+    e.sets.add(u._setShort);
+    e.setCounts[u._setKey] = (e.setCounts[u._setKey] || 0) + 1;
+    if (u.price && u.price < e.minPrice) e.minPrice = u.price;
+    if (u.garden && u.garden > e.maxGarden) e.maxGarden = u.garden;
+    if (u.readySort && u.readySort < e.bestReadySort) { e.bestReadySort = u.readySort; e.bestReady = u.ready; }
+  }
+  const estates = Array.from(map.values()).sort((a, b) => b.units.length - a.units.length || a.minPrice - b.minPrice);
+  const readyNowOr2026 = estates.filter(e => /^(2024|2025|2026)/.test(e.bestReadySort)).length;
+  const min12 = primaryUnits.filter(u => u._setKey === 'k' || u._setKey === '2').reduce((m, u) => (u.price && u.price < m ? u.price : m), Infinity);
+  const min34 = primaryUnits.filter(u => u._setKey === '3' || u._setKey === '4').reduce((m, u) => (u.price && u.price < m ? u.price : m), Infinity);
+  return { estates, totalUnits: allUnits.length, totalPrimary: primaryUnits.length, readyNowOr2026, min12, min34 };
+}
 const setTop = () => { TOP = Object.fromEntries([...S().TOP3, ...(S().OFF_PODIUM || [])].map(t => [t.id, t])); WT = Object.fromEntries((S().TOP_WT || []).map(t => [t.id, t])); };
 const mtag = m => m === 'wtórny' ? '<span class="tag wt">wtórny</span>' : `<span class="tag">${esc(m)}</span>`;
 
@@ -39,7 +88,7 @@ const link = u => { const s = safeUrl(u.url); return s ? `<a href="${esc(s)}" ta
 
 function rows() {
   const k = ui.sort;
-  return S().UNITS.filter(u => (!ui.hideOver || u.budget !== 'nie') && (!ui.market || u.market === ui.market))
+  return S().UNITS.filter(u => (!ui.hideOver || u.budget !== 'nie') && (!ui.market || u.market === ui.market) && (!ui.estate || estateKey(u) === ui.estate) && (!ui.district || districtGroup(u) === ui.district))
     .sort((a, b) => {
       const ra = TOP[a.id]?.rank ?? (WT[a.id] ? 10 + WT[a.id].rank : 99), rb = TOP[b.id]?.rank ?? (WT[b.id] ? 10 + WT[b.id].rank : 99);
       if (ra !== rb) return ra - rb; // Top 3, potem Top wtórny – zawsze na górze, w kolejności rankingu
@@ -50,7 +99,9 @@ function rows() {
 }
 
 function render() {
-  const X = S(), two = X !== D;
+  const X = S(), isKawalerki = X === D, hasBudgetCheck = X.hasBudgetCheck ?? isKawalerki;
+  const scopeLabel = X.bannerScope || (isKawalerki ? 'kawalerek (25–34 m²)' : 'mieszkań 2-pokojowych z ogródkiem (parter, 35–53 m²)');
+  const topTitle = isKawalerki ? 'kawalerki' : (X.label || '2 pokoje z ogródkiem');
   const list = rows(), byId = Object.fromEntries(X.UNITS.map(u => [u.id, u]));
   const over = X.UNITS.filter(u => u.budget === 'nie').length;
   const nWt = X.UNITS.filter(u => u.market === 'wtórny').length, nPi = X.UNITS.length - nWt;
@@ -64,12 +115,60 @@ function render() {
     ${(t.reasons || []).map(([k, v]) => `<div class="kv"><span>✔ ${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}
     <div style="margin-top:.5rem">${link(u)}</div></div>`;
   const th = (k, t) => `<th data-sort="${k}" title="Sortuj">${t}${ui.sort === k ? (ui.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
-  $app.innerHTML = `
-  <div class="settabs" role="tablist">${[['k', `Kawalerki (${D.UNITS.length})`], ['2', `2 pokoje z ogródkiem (${D.SET2 ? D.SET2.UNITS.length : 0})`]].map(([k, t]) => `<button class="settab${ui.set === k ? ' on' : ''}" data-set="${k}" role="tab" aria-selected="${ui.set === k}">${esc(t)}</button>`).join('')}</div>
-  <div class="banner">Stan na ${esc(X.UPDATED)} · ${two ? `${X.UNITS.length} mieszkań 2-pokojowych z ogródkiem (parter, 35–53 m²)` : `${X.UNITS.length} kawalerek (25–34 m²)`} – ${nPi} z rynku pierwotnego, ${nWt} z wtórnego · budżet ${fmt(D.BUDGET)} zł z miejscem postojowym (MP).
-    ${two ? '<b>Żadne nie mieści się w budżecie</b> – przy każdym podano, o ile go przekracza. ' : ''}Ceny MP częściowo to szacunki („szac.”), a odległości do metra – linia prosta. Szczegóły w sekcji „Na co uważać”.</div>
+  const dash = buildEstateDashboard();
+  const visibleEstates = dash.estates.filter(e => !ui.district || e.units.some(u => districtGroup(u) === ui.district));
+  const topEstates = visibleEstates.slice(0, 8);
+  const estateDashHtml = `
+  <section class="estate-dash" aria-label="Dashboard najlepszych osiedli od deweloperów">
+    <div class="estate-dash__head">
+      <div>
+        <div class="eyebrow">RYNEK PIERWOTNY · MIESZKANIA Z OGRÓDKIEM</div>
+        <h2>Najlepsze osiedla od deweloperów w Warszawie</h2>
+      </div>
+      ${ui.estate ? `<button class="estate-btn on" id="clearEstateBtn" type="button">Filtr osiedla: ${esc(ui.estate)} ×</button>` : `<span class="small">Kliknij dzielnicę lub osiedle, aby przefiltrować lokale poniżej</span>`}
+    </div>
+    <div class="estate-kpis">
+      <div class="estate-kpi"><div class="estate-kpi__label">Osiedla z ogródkiem</div><div class="estate-kpi__val">${dash.estates.length}</div><div class="estate-kpi__sub">inwestycji deweloperskich</div></div>
+      <div class="estate-kpi"><div class="estate-kpi__label">Lokali w bazie (1–4 pok.)</div><div class="estate-kpi__val">${dash.totalUnits}</div><div class="estate-kpi__sub">${dash.totalPrimary} pierwotny · ${dash.totalUnits - dash.totalPrimary} wtórny</div></div>
+      <div class="estate-kpi"><div class="estate-kpi__label">1–2 pok. od dewelopera</div><div class="estate-kpi__val">${dash.min12 < Infinity ? `${fmt(dash.min12)} zł` : '–'}</div><div class="estate-kpi__sub">3–4 pok. od ${dash.min34 < Infinity ? `${fmt(dash.min34)} zł` : '–'}</div></div>
+      <div class="estate-kpi"><div class="estate-kpi__label">Gotowe / odbiór 2026</div><div class="estate-kpi__val">${dash.readyNowOr2026}</div><div class="estate-kpi__sub">osiedla z szybkim odbiorem</div></div>
+    </div>
+    <div class="estate-districts" role="group" aria-label="Dzielnica">
+      ${DISTRICT_GROUPS.map(([k, label]) => `<button type="button" class="estate-btn${ui.district === k ? ' on' : ''}" data-district="${k}">${esc(label)}</button>`).join('')}
+    </div>
+    <div class="estate-grid">
+      ${topEstates.map(e => {
+        const targetSet = e.setCounts[ui.set] ? ui.set : Object.keys(e.setCounts)[0];
+        const safe = safeUrl(e.url);
+        return `<article class="estate-card${ui.estate === e.name ? ' is-active' : ''}">
+          <div>
+            <div class="estate-card__top">
+              <div class="estate-card__name">${esc(e.name)}</div>
+              <span class="badge">${e.units.length} szt.</span>
+            </div>
+            <div class="estate-card__meta">${esc(e.dev)} · ${esc(e.loc)}</div>
+          </div>
+          <div class="estate-card__stats">
+            <div><span>Od:</span> <b>${e.minPrice < Infinity ? `${fmt(e.minPrice)} zł` : '–'}</b></div>
+            <div><span>Ogródek max:</span> <b>${e.maxGarden ? `${m2(e.maxGarden)} m²` : 'w opisie'}</b></div>
+            <div><span>Pokoje:</span> <b>${esc(Array.from(e.sets).join(', '))}</b></div>
+            <div><span>Odbiór:</span> <b>${esc(e.bestReady)}</b></div>
+          </div>
+          <div class="estate-card__actions">
+            <button type="button" class="estate-btn${ui.estate === e.name ? ' on' : ''}" data-estate="${esc(e.name)}" data-target-set="${esc(targetSet)}">${ui.estate === e.name ? 'Wybrano w tabeli' : `Pokaż lokale (${e.units.length})`}</button>
+            ${safe ? `<a href="${esc(safe)}" target="_blank" rel="noopener noreferrer nofollow">${esc(e.site)} ↗</a>` : ''}
+          </div>
+        </article>`;
+      }).join('')}
+    </div>
+  </section>`;
+
+  $app.innerHTML = `${estateDashHtml}
+  <div class="settabs" role="tablist">${SET_DEFS.filter(([, , , get]) => get()).map(([k, title, , get]) => `<button class="settab${ui.set === k ? ' on' : ''}" data-set="${k}" role="tab" aria-selected="${ui.set === k}">${esc(`${title} (${get().UNITS.length})`)}</button>`).join('')}</div>
+  <div class="banner">Stan na ${esc(X.UPDATED)} · ${X.UNITS.length} ${esc(scopeLabel)} – ${nPi} z rynku pierwotnego, ${nWt} z wtórnego${hasBudgetCheck || X === D.SET2 ? ` · budżet ${fmt(D.BUDGET)} zł z miejscem postojowym (MP)` : ''}.
+    ${X === D.SET2 ? '<b>Żadne nie mieści się w budżecie</b> – przy każdym podano, o ile go przekracza. ' : ''}Ceny MP częściowo to szacunki („szac.”)${isKawalerki || X === D.SET2 ? ', a odległości do metra – linia prosta' : ''}. Szczegóły w sekcji „Na co uważać”.</div>
   <div class="mkt" role="group" aria-label="Rynek"><span>Rynek:</span>${[['pierwotny', `pierwotny (${nPi})`], ['wtórny', `wtórny (${nWt})`], ['', `wszystkie (${X.UNITS.length})`]].map(([m, t]) => `<button class="mktbtn${ui.market === m ? ' on' : ''}" data-mkt="${m}">${esc(t)}</button>`).join('')}</div>
-  ${showP ? `<h2 class="sec">🏆 Top 3 – najlepsze ${two ? '2 pokoje z ogródkiem' : 'kawalerki'} z rynku pierwotnego</h2>` : ''}
+  ${showP ? `<h2 class="sec">🏆 Top 3 – najlepsze ${esc(topTitle)} z rynku pierwotnego</h2>` : ''}
   <div class="legend"><b>Jak liczony jest ranking</b> (w tej kolejności):
     <ol>${(X.RANK_CRITERIA || []).map(([t, d]) => `<li><b>${esc(t)}</b> – ${esc(d)}</li>`).join('')}</ol>
     <span class="small">„szac.” = cena miejsca postojowego oszacowana z cennika wcześniejszego etapu, do potwierdzenia u dewelopera.</span></div>
@@ -81,27 +180,57 @@ function render() {
   <p class="small">${esc(X.READY_NOW)}</p>
   <h2 class="sec">Porównanie</h2>
   <div class="filters">
-    ${two ? '' : `<label class="toggle"><input type="checkbox" id="hideOver" ${ui.hideOver ? 'checked' : ''}> Ukryj poza budżetem (&gt; ${fmt(D.BUDGET)} zł z MP, ${over} szt.)</label>`}
+    ${!hasBudgetCheck ? '' : `<label class="toggle"><input type="checkbox" id="hideOver" ${ui.hideOver ? 'checked' : ''}> Ukryj poza budżetem (&gt; ${fmt(D.BUDGET)} zł z MP, ${over} szt.)</label>`}
     <label>Rynek<select id="market">${[['', 'wszystkie'], ['pierwotny', 'pierwotny'], ['wtórny', 'wtórny']].map(([v, t]) => `<option value="${v}" ${ui.market === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
     <label>Sortuj<select id="sortSel">${[['total', 'Razem z MP'], ['perM2', 'Cena za m²'], ['garden', 'Ogródek m²'], ['readySort', 'Termin odbioru'], ['metroKm', 'Odległość do metra']].map(([k, t]) => `<option value="${k}" ${ui.sort === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
     <span class="small">Widoczne: <b>${list.length}</b> z ${X.UNITS.length} · 🏆 Top 3, „Poza podium” i 🔑 Top wtórny zawsze na górze, reszta wg wybranego sortowania</span>
   </div>
   <div class="tablewrap"><table>
-    <thead><tr>${th('id', '#')}${th('name', 'Opcja')}${th('m2', 'm²')}${th('garden', 'Ogródek m²')}<th>Piętro</th>${th('price', 'Cena zł')}${th('perM2', 'zł/m²')}<th>Miejsce post. zł</th>${th('total', 'Razem z MP zł')}${th('readySort', 'Odbiór')}${th('metroKm', 'Metro (linia prosta)')}${th('budget', 'W budżecie')}<th>Link</th></tr></thead>
-    <tbody>${list.map(u => `<tr class="${u.budget === 'nie' ? 'over' : ''}${TOP[u.id] ? ' toprow ' + TOP[u.id].medal : WT[u.id] ? ' toprow wt' : ''}">
+    <thead><tr>${th('id', '#')}${th('name', 'Opcja')}${th('m2', 'm²')}${th('garden', 'Ogródek m²')}<th>Piętro</th>${th('price', 'Cena zł')}${th('perM2', 'zł/m²')}<th>Miejsce post. zł</th>${th('total', 'Razem z MP zł')}${th('readySort', 'Odbiór')}${th('metroKm', 'Metro / lokalizacja')}<th>${hasBudgetCheck || X === D.SET2 ? 'W budżecie' : 'Podatek / PCC'}</th><th>Link</th></tr></thead>
+    <tbody>${list.map(u => `<tr class="${(hasBudgetCheck || X === D.SET2) && u.budget === 'nie' ? 'over' : ''}${TOP[u.id] ? ' toprow ' + TOP[u.id].medal : WT[u.id] ? ' toprow wt' : ''}">
       <td class="num">${u.id}</td><td>${TOP[u.id] ? badge(TOP[u.id]) + ' ' : ''}${WT[u.id] ? `<span class="badge wt">🔑 Top wtórny ${WT[u.id].rank}</span> ` : ''}<b>${esc(u.name)}</b> ${mtag(u.market)}<div class="small">${esc(u.dev)} · ${esc(u.loc)}${u.note ? ` · ${esc(u.note)}` : ''}</div></td>
       <td class="num">${m2(u.m2)}</td><td class="num">${esc(u.gardenTxt)}</td><td>${esc(u.floor)}</td>
       <td class="num">${fmt(u.price)}</td><td class="num">${fmt(u.perM2)}</td><td>${esc(u.parking)}</td>
       <td class="num"><b>${esc(u.totalTxt)}</b></td><td>${esc(u.ready)}</td><td>${esc(u.metro)}</td>
-      <td>${BUDGET_TAG[u.budget] || ''}${u.overTxt ? `<div class="small">${esc(u.overTxt)}</div>` : ''}</td><td>${link(u)}</td></tr>`).join('')}</tbody></table></div>
+      <td>${hasBudgetCheck || X === D.SET2 ? (BUDGET_TAG[u.budget] || '') : (u.market === 'pierwotny' ? '<span class="tag ok">bez PCC</span>' : '<span class="tag chk">+2% PCC</span>')}${u.overTxt && (hasBudgetCheck || X === D.SET2) ? `<div class="small">${esc(u.overTxt)}</div>` : ''}</td><td>${link(u)}<button type="button" class="copy-btn" data-copy-id="${u.id}">Kopiuj</button></td></tr>`).join('')}</tbody></table></div>
   <h2 class="sec">Na co uważać</h2>
   <div class="caveats">${X.CAVEATS.map(([t, d]) => `<div class="card"><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join('')}</div>
   <p class="small" style="margin-top:1rem">Źródła: strony deweloperów i portali (linki w tabeli), sprawdzone ${esc(X.UPDATED)}; rynek wtórny – pojedyncze ogłoszenia Otodom, sprawdzone 31.10.2026. Bez zdjęć i opisów z ogłoszeń.</p>`;
 }
 
 $app.addEventListener('click', e => {
+  const cb = e.target.closest('button[data-copy-id]');
+  if (cb) {
+    const id = Number(cb.dataset.copyId);
+    const u = S().UNITS.find(x => x.id === id);
+    if (u && navigator.clipboard) {
+      const txt = `${u.name} (${u.market}) — ${u.loc}\nMetraż: ${m2(u.m2)} m² | Ogródek: ${u.gardenTxt} | Odbiór: ${u.ready}\nCena: ${fmt(u.price)} zł (${u.totalTxt} z MP)\nLink: ${u.url}`;
+      navigator.clipboard.writeText(txt).then(() => {
+        cb.textContent = 'Skopiowano ✓';
+        cb.classList.add('ok');
+        setTimeout(() => { cb.textContent = 'Kopiuj'; cb.classList.remove('ok'); }, 1800);
+      }).catch(() => {});
+    }
+    return;
+  }
+  const dbBtn = e.target.closest('button[data-district]');
+  if (dbBtn) {
+    ui.district = dbBtn.dataset.district || '';
+    ui.estate = '';
+    render();
+    return;
+  }
+  if (e.target.closest('#clearEstateBtn')) { ui.estate = ''; render(); return; }
+  const eb = e.target.closest('button[data-estate]');
+  if (eb) {
+    const nextEstate = ui.estate === eb.dataset.estate ? '' : eb.dataset.estate;
+    ui.estate = nextEstate;
+    if (nextEstate && eb.dataset.targetSet && ui.set !== eb.dataset.targetSet) { ui.set = eb.dataset.targetSet; ui.hideOver = false; ui.market = 'pierwotny'; setTop(); }
+    render();
+    return;
+  }
   const st = e.target.closest('button[data-set]');
-  if (st) { if (ui.set !== st.dataset.set) { ui.set = st.dataset.set; ui.hideOver = false; ui.market = ''; setTop(); render(); } return; }
+  if (st) { if (ui.set !== st.dataset.set) { ui.set = st.dataset.set; ui.hideOver = false; ui.market = ''; ui.estate = ''; setTop(); render(); } return; }
   const mb = e.target.closest('button[data-mkt]');
   if (mb) { ui.market = mb.dataset.mkt; render(); return; }
   const s = e.target.closest('th[data-sort]');
