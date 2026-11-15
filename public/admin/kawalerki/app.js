@@ -23,7 +23,7 @@ let TOP = {};
 let WT = {}; // Top wtórny (odsprzedaże)
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '4.' };
 const badge = (t, big) => t.rank > 3 ? `<span class="badge off">Poza podium</span>` : `<span class="badge ${t.medal}${big ? ' big' : ''}">🏆 TOP ${t.rank}</span>`;
-const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'k', estate: '', district: '' };
+const ui = { sort: 'total', dir: 1, hideOver: false, market: '', set: 'k', estate: '', district: '', showAllEstates: false };
 // Zestaw danych: 'k' = kawalerki, '2' = 2 pokoje, '3' = 3 pokoje, '4' = 4 pokoje.
 const SET_DEFS = [
   ['k', 'Kawalerki', '1 pok.', () => D],
@@ -43,8 +43,8 @@ const DISTRICT_GROUPS = [
 function districtGroup(u) {
   const txt = `${u.loc || ''} ${u.metro || ''} ${u.name || ''}`.toLowerCase();
   if (/bemow|chrzan[oó]w|lazurow|szeligow|cooper|sochaczew|kocjana|pe[łl]czy|czumy|batalion|karolin|lumea/.test(txt)) return 'bemowo';
-  if (/bia[łl]o[łl][eę]k|tarchomin|[żz]era[ńn]|lewand[oó]w|frachtow|zdziarsk|szamocin|modli[ńn]sk|kartograf|sprawn|daniszew|pancer|berenson|k[ąa]ty|mochty[ńn]/.test(txt)) return 'bialoleka';
-  if (/wola|mokot[oó]w|stegn|ursus|go[łl][ąa]bki|w[łl]ochy|coko[łl]ow|capri|fajansow/.test(txt)) return 'centrum_zachod';
+  if (/bia[łl]o[łl][eę]k|tarchomin|[żz]era[ńn]|lewand[oó]w|frachtow|zdziarsk|szamocin|modli[ńn]sk|kartograf|sprawn|daniszew|pancer|berenson|k[ąa]ty|mochty[ńn]|hemar|ostr[óo]dzk|sarenki|anilinow|p[łl]ochoci[ńn]sk|w[łl]odkowica/.test(txt)) return 'bialoleka';
+  if (/wola|mokot[oó]w|stegn|ursus|go[łl][ąa]bki|w[łl]ochy|coko[łl]ow|capri|fajansow|prystora|[łl]opusza[ńn]sk|brodatego|piast[oó]w/.test(txt)) return 'centrum_zachod';
   return 'wschod';
 }
 
@@ -126,7 +126,8 @@ function render() {
   const th = (k, t) => `<th data-sort="${k}" title="Sortuj">${t}${ui.sort === k ? (ui.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
   const dash = buildEstateDashboard();
   const visibleEstates = dash.estates.filter(e => !ui.district || e.units.some(u => districtGroup(u) === ui.district));
-  const topEstates = visibleEstates.slice(0, 8);
+  const hasMoreEstates = visibleEstates.length > 8;
+  const topEstates = ui.showAllEstates ? visibleEstates : visibleEstates.slice(0, 8);
   const estateDashHtml = `
   <section class="estate-dash" aria-label="Dashboard najlepszych osiedli od deweloperów">
     <div class="estate-dash__head">
@@ -134,7 +135,10 @@ function render() {
         <div class="eyebrow">RYNEK PIERWOTNY · MIESZKANIA Z OGRÓDKIEM</div>
         <h2>Najlepsze osiedla od deweloperów w Warszawie</h2>
       </div>
-      ${ui.estate ? `<button class="estate-btn on" id="clearEstateBtn" type="button">Filtr osiedla: ${esc(ui.estate)} ×</button>` : `<span class="small">Kliknij dzielnicę lub osiedle, aby przefiltrować lokale poniżej</span>`}
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+        ${hasMoreEstates ? `<button class="estate-btn${ui.showAllEstates ? ' on' : ''}" id="toggleAllEstatesBtn" type="button">${ui.showAllEstates ? 'Zwiń do Top 8' : `Pokaż wszystkie (${visibleEstates.length})`}</button>` : ''}
+        ${ui.estate ? `<button class="estate-btn on" id="clearEstateBtn" type="button">Filtr osiedla: ${esc(ui.estate)} ×</button>` : `<span class="small">Kliknij dzielnicę lub osiedle, aby przefiltrować lokale poniżej</span>`}
+      </div>
     </div>
     <div class="estate-kpis">
       <div class="estate-kpi"><div class="estate-kpi__label">Osiedla z ogródkiem</div><div class="estate-kpi__val">${dash.estates.length}</div><div class="estate-kpi__sub">inwestycji deweloperskich</div></div>
@@ -231,6 +235,7 @@ $app.addEventListener('click', e => {
     render();
     return;
   }
+  if (e.target.closest('#toggleAllEstatesBtn')) { ui.showAllEstates = !ui.showAllEstates; render(); return; }
   if (e.target.closest('#clearEstateBtn')) { ui.estate = ''; render(); return; }
   const eb = e.target.closest('button[data-estate]');
   if (eb) {
