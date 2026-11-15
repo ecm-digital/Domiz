@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
@@ -17,7 +17,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const db = getFirestore(app);
+
+let db: Firestore;
+try {
+    db = initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+    });
+} catch {
+    db = getFirestore(app);
+}
+
 const auth = getAuth(app);
 const storage = getStorage(app);
 const functions = getFunctions(app);

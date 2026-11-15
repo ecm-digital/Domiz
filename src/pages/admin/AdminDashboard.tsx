@@ -697,10 +697,25 @@ export const AdminDashboard = () => {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(query(collection(db, 'inquiries'), orderBy('createdAt', 'desc')), (snapshot) => {
+        let active = true;
+        const inquiriesQuery = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
+
+        getDocs(inquiriesQuery)
+            .then((snapshot) => {
+                if (!active) return;
+                setInquiries(snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Inquiry, 'id'>) })));
+            })
+            .catch((error) => console.error('Błąd jednorazowego pobierania leadów:', error));
+
+        const unsubscribe = onSnapshot(inquiriesQuery, (snapshot) => {
+            if (!active) return;
             setInquiries(snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Inquiry, 'id'>) })));
         }, (error) => console.error('Błąd pobierania leadów:', error));
-        return unsubscribe;
+
+        return () => {
+            active = false;
+            unsubscribe();
+        };
     }, []);
 
     useEffect(() => {
